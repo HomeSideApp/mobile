@@ -1,0 +1,74 @@
+# syntax=docker/dockerfile:1
+#
+# Emulador Android headless para probar la UI nativa sin instalar nada en el
+# host. Reusa la imagen de desarrollo (PHP, JDK y Android SDK ya resueltos) y
+# agrega el paquete `emulator` + una imagen de sistema.
+#
+# Requiere /dev/kvm (el compose lo pasa con `devices`).
+#
+#   make emulator-build
+#   make emulator-up
+#   make android-emulator
+#
+ARG DEV_IMAGE=homeside-mobile-dev:latest
+FROM ${DEV_IMAGE}
+
+USER root
+ENV DEBIAN_FRONTEND=noninteractive
+
+ARG UID=1000
+ARG GID=1000
+ARG ANDROID_API=35
+ARG SYSTEM_IMAGE=system-images;android-35;google_apis;x86_64
+ARG AVD_NAME=homeside
+
+# Librerías que el emulador necesita aunque corra sin ventana.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglu1-mesa \
+        libpulse0 \
+        libx11-6 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxi6 \
+        libxtst6 \
+        libnss3 \
+        libxrandr2 \
+        libasound2 \
+        libxdamage1 \
+        libxfixes3 \
+        libxrender1 \
+        libdrm2 \
+        libgbm1 \
+        libxcb1 \
+        libxkbcommon0 \
+        libwayland-client0 \
+        libvulkan1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Emulador + imagen de sistema (capa pesada, se cachea).
+RUN set -eux; \
+    yes | sdkmanager --licenses > /dev/null; \
+    sdkmanager --install "emulator" "${SYSTEM_IMAGE}"; \
+    chown -R "${UID}:${GID}" "${ANDROID_HOME}"
+
+# AVD listo para arrancar, en el HOME del usuario dev (capa liviana aparte).
+RUN set -eux; \
+    mkdir -p /home/dev/.android/avd; \
+    HOME=/home/dev ANDROID_AVD_HOME=/home/dev/.android/avd \
+        avdmanager create avd \
+            --name "${AVD_NAME}" \
+            --package "${SYSTEM_IMAGE}" \
+            --device pixel \
+            --force; \
+    chown -R "${UID}:${GID}" /home/dev/.android
+
+COPY docker/emulator-entrypoint.sh /usr/local/bin/emulator-entrypoint
+RUN chmod +x /usr/local/bin/emulator-entrypoint
+
+USER dev
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
+CMD ["/usr/local/bin/emulator-entrypoint"]

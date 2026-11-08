@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Exceptions;
+
+use InvalidArgumentException;
+
+/**
+ * La dirección de servidor que escribió el usuario no es usable.
+ *
+ * El `reason` es estable para que la UI pueda traducirlo; el mensaje ya viene
+ * listo para mostrar.
+ */
+final class InvalidServerUrl extends InvalidArgumentException
+{
+    public function __construct(
+        public readonly string $reason,
+        string $message,
+    ) {
+        parent::__construct($message);
+    }
+
+    public static function empty(): self
+    {
+        return new self('empty', 'Escribí la dirección de tu servidor.');
+    }
+
+    public static function malformed(): self
+    {
+        return new self('malformed', 'Esa dirección no es válida. Ejemplo: https://homeside.cloud');
+    }
+
+    public static function unsupportedScheme(string $scheme): self
+    {
+        return new self(
+            'unsupported_scheme',
+            sprintf('El esquema "%s" no está soportado. Usá https://', $scheme),
+        );
+    }
+
+    public static function insecure(): self
+    {
+        return new self(
+            'insecure',
+            'Por seguridad el servidor debe usar https://. Solo se permite http:// en localhost o en tu red local.',
+        );
+    }
+}
