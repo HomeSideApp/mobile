@@ -2,20 +2,176 @@
 
 namespace App\NativeComponents;
 
+use App\Exceptions\HomesideException;
+use App\Services\Homeside\AuthService;
+use App\Services\Homeside\ListsService;
+use App\Services\Homeside\Session;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
 /**
- * Listas de la compra (personales y del hogar).
+ * Listas de la compra del usuario: las personales y las del hogar activo.
  *
- * Fase 0: cáscara navegable con estado vacío. La carga real, los cards con
- * color por categoría y el toggle de ítems llegan en la Fase 1.
+ * Nota de alcance: la API todavía no devuelve contadores por lista (el web los
+ * arma con `withCount`), así que acá se muestra el nombre y el ámbito. Cuando
+ * entre `GET /v1/lists` unificado (T-90) esta pantalla suma pendientes.
  */
 final class Lists extends NativeComponent
 {
+    /** @var array<int, array<string, mixed>> */
+    public array $personal = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $householdLists = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $households = [];
+
+    public ?string $activeHouseholdId = null;
+
+    public ?string $activeHouseholdName = null;
+
+    public string $search = '';
+
+    public bool $loading = true;
+
+    public bool $needsLogin = false;
+
+    public ?string $error = null;
+
+    public function mount(): void
+    {
+        $this->load();
+    }
+
+    public function onResume(): void
+    {
+        $this->load();
+    }
+
+    public function refresh(): void
+    {
+        $this->load();
+    }
+
     public function navTitle(): string
     {
         return 'Listas';
+    }
+
+    public function onSearch(?string $value = null): void
+    {
+        if (is_string($value)) {
+            $this->search = $value;
+        }
+
+        $this->load();
+    }
+
+    public function openList(string $listId): void
+    {
+        $this->navigate('/lists/'.$listId);
+    }
+
+    public function openHouseholdList(string $listId): void
+    {
+        if ($this->activeHouseholdId === null) {
+            return;
+        }
+
+        $this->navigate('/households/'.$this->activeHouseholdId.'/lists/'.$listId);
+    }
+
+    public function createList(): void
+    {
+        $this->navigate('/lists/create');
+    }
+
+    public function goToLogin(): void
+    {
+        $this->navigate('/login');
+    }
+
+    public function goToServerSetup(): void
+    {
+        $this->navigate('/server-setup');
+    }
+
+    private function load(): void
+    {
+        $this->loading = true;
+        $this->error = null;
+
+        if (! (new Session)->isAuthenticated()) {
+            $this->needsLogin = true;
+            $this->loading = false;
+
+            return;
+        }
+
+        $this->needsLogin = false;
+
+        $filters = ['perPage' => 100];
+
+        if (trim($this->search) !== '') {
+            $filters['search'] = trim($this->search);
+        }
+
+        try {
+            $me = (new AuthService)->me();
+            $lists = new ListsService;
+
+            $this->households = $lists->households();
+            $this->activeHouseholdId = is_string($me['active_household_id'] ?? null)
+                ? $me['active_household_id']
+                : null;
+
+            $this->activeHouseholdName = $this->householdName($this->activeHouseholdId);
+            $this->personal = $this->normalizeLists($lists->personal($filters));
+
+            $this->householdLists = $this->activeHouseholdId !== null
+                ? $this->normalizeLists($lists->household($this->activeHouseholdId, $filters))
+                : [];
+        } catch (HomesideException $exception) {
+            $this->needsLogin = $exception->requiresLogin();
+            $this->error = $exception->getMessage();
+        } finally {
+            $this->loading = false;
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $lists
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeLists(array $lists): array
+    {
+        return array_map(function (array $list): array {
+            $household = is_array($list['household'] ?? null) ? $list['household'] : null;
+
+            return [
+                'id' => (string) ($list['id'] ?? ''),
+                'name' => (string) ($list['name'] ?? 'Lista'),
+                'household_id' => is_string($list['household_id'] ?? null) ? $list['household_id'] : null,
+                'household_name' => is_string($household['name'] ?? null) ? $household['name'] : null,
+                'updated_at' => is_string($list['updated_at'] ?? null) ? $list['updated_at'] : null,
+            ];
+        }, $lists);
+    }
+
+    private function householdName(?string $householdId): ?string
+    {
+        if ($householdId === null) {
+            return null;
+        }
+
+        foreach ($this->households as $household) {
+            if (($household['id'] ?? null) === $householdId) {
+                return is_string($household['name'] ?? null) ? $household['name'] : null;
+            }
+        }
+
+        return null;
     }
 
     public function render(): View

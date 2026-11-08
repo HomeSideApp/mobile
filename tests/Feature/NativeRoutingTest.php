@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\NativeComponents\House;
+use App\NativeComponents\ListCreate;
+use App\NativeComponents\ListDetail;
 use App\NativeComponents\Lists;
+use App\NativeComponents\Login;
+use App\NativeComponents\ProductPicker;
 use App\NativeComponents\Profile;
 use App\NativeComponents\Recipes;
 use App\NativeComponents\ServerSetup;
@@ -32,6 +36,20 @@ class NativeRoutingTest extends TestCase
     public function test_the_server_setup_screen_renders_outside_the_tabs(): void
     {
         Native::visit('/server-setup')->assertScreen(ServerSetup::class);
+    }
+
+    public function test_the_login_screen_renders_outside_the_tabs(): void
+    {
+        Native::visit('/login')->assertScreen(Login::class);
+    }
+
+    public function test_the_pushed_list_screens_render_with_a_stack_chrome(): void
+    {
+        Native::visit('/lists/create')->assertScreen(ListCreate::class);
+        Native::visit('/lists/list-1')->assertScreen(ListDetail::class);
+        Native::visit('/lists/list-1/add')->assertScreen(ProductPicker::class);
+        Native::visit('/households/household-1/lists/list-1')->assertScreen(ListDetail::class);
+        Native::visit('/households/household-1/lists/list-1/add')->assertScreen(ProductPicker::class);
     }
 
     public function test_an_unknown_native_uri_is_not_resolved(): void

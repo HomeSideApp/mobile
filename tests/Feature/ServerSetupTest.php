@@ -56,7 +56,7 @@ class ServerSetupTest extends TestCase
             ->call('checkConnection')
             ->assertSet('status', 'ok')
             ->assertSet('serverName', 'HomeSide')
-            ->assertNavigatedTo('/lists');
+            ->assertNavigatedTo('/login');
 
         $this->assertSame('https://casa.example.com', (new SettingsRepository)->server()?->baseUrl);
     }

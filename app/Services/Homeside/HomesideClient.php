@@ -164,7 +164,9 @@ final class HomesideClient
         $code = is_array($body) && is_string($body['code'] ?? null) ? $body['code'] : null;
 
         if ($status === 401) {
-            return HomesideException::unauthorized();
+            return $message !== ''
+                ? new HomesideException(HomesideException::UNAUTHORIZED, $message, 401)
+                : HomesideException::unauthorized();
         }
 
         if ($status === 403) {

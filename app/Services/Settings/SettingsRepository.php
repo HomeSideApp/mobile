@@ -118,6 +118,19 @@ final class SettingsRepository
         Setting::query()->delete();
     }
 
+    /**
+     * Lectura genérica para valores no sensibles (preferencias, snapshots).
+     */
+    public function get(string $key): ?string
+    {
+        return $this->read($key);
+    }
+
+    public function set(string $key, string $value): void
+    {
+        $this->write($key, $value);
+    }
+
     private function read(string $key): ?string
     {
         $value = Setting::query()->whereKey($key)->value('value');

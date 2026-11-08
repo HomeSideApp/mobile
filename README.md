@@ -95,10 +95,36 @@ iOS se compila **solo en macOS** (Xcode 26+).
 
 - **Fase 0 (hecha)**: entorno Docker, scaffold, tema, cliente HTTP, pantalla de
   servidor con health check, tabs y tests.
-- **Fase 1 (siguiente)**: login con OTP, listas con cards por categoría, perfil
-  y cache offline.
+- **Fase 1 (hecha)**: login con OTP, listas personales y del hogar, detalle con
+  cards por color, alta de ítems con buscador, quick-create y perfil con cierre
+  de sesión.
+- **Pendiente**: cache offline con cola de mutaciones (T-16) y contadores por
+  lista, que necesitan `GET /v1/lists` unificado en el backend (T-90).
 
 Backlog detallado: `../odd/tasks/homeside-mobile.md`.
+
+## Generar un APK para instalar
+
+```bash
+make emulator-up                  # solo si vas a instalar en el emulador
+make android-emulator             # compila, firma en debug e instala
+
+# o compilar e instalar en un teléfono real conectado por adb:
+make android
+```
+
+El APK queda en `nativephp/android/app/build/outputs/apk/debug/app-debug.apk`.
+Copialo a `dist/` para compartirlo:
+
+```bash
+mkdir -p dist && cp nativephp/android/app/build/outputs/apk/debug/app-debug.apk \
+    dist/homeside-0.1.0-debug.apk
+```
+
+Es un build **debug** firmado con la keystore de desarrollo: sirve para
+instalarlo a mano (hay que permitir "orígenes desconocidos" en Android), no para
+publicarlo en la tienda. Para Play/App Store hace falta `native:package` con una
+keystore propia.
 
 ## Identidad de la app
 

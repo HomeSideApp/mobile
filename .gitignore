@@ -37,3 +37,6 @@ GoogleService-Info.plist
 
 # Local compose overrides
 /compose.env
+
+# APKs locales (build artifacts, no van al repo)
+/dist

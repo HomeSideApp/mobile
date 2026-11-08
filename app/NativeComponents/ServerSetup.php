@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Exceptions\InvalidServerUrl;
 use App\Services\Homeside\HomesideClient;
+use App\Services\Homeside\Session;
 use App\Services\Settings\SettingsRepository;
 use App\Support\ServerUrl;
 use Illuminate\View\View;
@@ -102,7 +103,7 @@ final class ServerSetup extends NativeComponent
         $this->status = 'ok';
         $this->alreadyConfigured = true;
 
-        $this->navigate('/lists');
+        $this->navigate((new Session)->isAuthenticated() ? '/lists' : '/login');
     }
 
     /**
@@ -116,7 +117,7 @@ final class ServerSetup extends NativeComponent
             return;
         }
 
-        $this->navigate('/lists');
+        $this->navigate((new Session)->isAuthenticated() ? '/lists' : '/login');
     }
 
     private function fail(string $message): void
