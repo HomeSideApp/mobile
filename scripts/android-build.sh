@@ -27,6 +27,20 @@ local_props="${android_dir}/local.properties"
 if [ -d "$android_dir" ]; then
     printf 'sdk.dir=%s\n' "$SDK_PATH" > "$local_props"
 
+    # Fondo del icono adaptativo: el de la plantilla es blanco puro y el icono
+    # de marca está compuesto sobre el cálido del tema, así que se igualan para
+    # que el cuadrado del foreground no se note dentro de la máscara.
+    launcher_background="$android_dir/app/src/main/res/drawable/ic_launcher_background.xml"
+    if [ -f "$launcher_background" ]; then
+        cat > "$launcher_background" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle">
+    <solid android:color="#FBFCFA"/>
+</shape>
+XML
+    fi
+
     if [ -f "$gradle_props" ]; then
         sed -i -E \
             "s|^org\.gradle\.jvmargs=.*|org.gradle.jvmargs=-Xmx${GRADLE_HEAP}m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8|" \

@@ -126,6 +126,21 @@ instalarlo a mano (hay que permitir "orígenes desconocidos" en Android), no par
 publicarlo en la tienda. Para Play/App Store hace falta `native:package` con una
 keystore propia.
 
+## Identidad visual
+
+`public/icon.png`, `public/splash.png` y `public/splash-dark.png` se generan
+desde el mark canónico de HomeSide (`resources/brand/logo.png`):
+
+```bash
+php scripts/generate-brand-assets.php
+```
+
+- **Icono**: 1024x1024 opaco sobre `#FBFCFA` (iOS rechaza alfa; el launcher
+  adaptativo de Android usa la misma tonalidad de fondo para que el recorte de
+  la máscara no se note).
+- **Splash**: 960x1440 en claro (`#FBFCFA`) y oscuro (`#0B2F2F`).
+- NativePHP regenera los mipmaps y las densidades del splash en cada build.
+
 ## Identidad de la app
 
 | Ajuste | Valor |
