@@ -34,7 +34,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     ANDROID_HOME=/opt/android-sdk \
     ANDROID_SDK_ROOT=/opt/android-sdk \
     GRADLE_USER_HOME=/home/dev/.gradle \
-    PATH=/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/emulator:/usr/local/bin:$PATH
+    PATH=/usr/lib/jvm/default-java/bin:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/build-tools/35.0.0:/opt/android-sdk/emulator:/usr/local/bin:$PATH
 
 # ---------------------------------------------------------------------------
 # Dependencias de sistema + extensiones PHP
@@ -133,7 +133,7 @@ RUN printf '%s\n' \
       'export ANDROID_HOME=/opt/android-sdk' \
       'export ANDROID_SDK_ROOT=/opt/android-sdk' \
       'export JAVA_HOME=/usr/lib/jvm/default-java' \
-      'export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH' \
+      'export PATH=$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/35.0.0:$ANDROID_HOME/emulator:$PATH' \
       > /etc/profile.d/android-sdk.sh
 
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint

@@ -103,6 +103,43 @@ iOS se compila **solo en macOS** (Xcode 26+).
 
 Backlog detallado: `../odd/tasks/homeside-mobile.md`.
 
+## APK automático en cada push a `develop`
+
+`.github/workflows/android-dev.yml` corre en dos jobs:
+
+1. **Tests** — PHP 8.4, extensiones, `composer install` y `php artisan test`.
+2. **APK de desarrollo** — solo si los tests pasan y no es un PR: instala el
+   PHP embebido (`native:install`), compila con `native:package` firmado y
+   publica el resultado.
+
+El APK se puede bajar de dos lugares:
+
+| Lugar | URL |
+| --- | --- |
+| Release rodante (link estable) | `https://github.com/HomeSideApp/mobile/releases/download/dev-latest/homeside-dev.apk` |
+| Artifact del run | pestaña *Actions* → run → *Artifacts* → `homeside-apk-<sha>` |
+
+También se publica `homeside-dev.apk.sha256` y un resumen en la página del run
+con el commit y la keystore usada.
+
+### Firma y actualizaciones
+
+El APK se firma con una keystore de desarrollo. Para que `adb install -r`
+funcione entre builds, cargá estos secretos del repo:
+
+| Secreto | Contenido |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | tu keystore PKCS12 en base64: `base64 -w0 dev.p12` |
+| `ANDROID_KEYSTORE_PASSWORD` | la contraseña (alias `homeside`) |
+
+Sin esos secretos el workflow genera una keystore efímera: el APK instala
+igual, pero cada build firma distinto y Android va a pedir desinstalar antes
+de actualizar.
+
+> Nota: NativePHP imprime "Build output is unsigned" aunque el APK esté firmado;
+> es un falso positivo de `jarsigner` (solo ve firmas v1). El workflow verifica
+> con `apksigner`, que es la fuente de verdad.
+
 ## Generar un APK para instalar
 
 ```bash
