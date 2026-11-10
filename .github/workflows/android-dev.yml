@@ -22,6 +22,7 @@ env:
   PHP_VERSION: '8.5'
   JAVA_VERSION: '17'
   ANDROID_API: '35'
+  ANDROID_NDK_VERSION: '27.0.12077973'
 
 jobs:
   tests:
@@ -53,6 +54,7 @@ jobs:
     needs: tests
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -70,7 +72,9 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Android SDK
-        uses: android-actions/setup-android@v3
+        # v4 sacó el `sdkmanager tools` que Google dejó de publicar: con v3 el
+        # step moría con "Failed to find package 'tools'".
+        uses: android-actions/setup-android@v4
 
       - name: Paquetes del SDK
         run: |
@@ -80,7 +84,18 @@ jobs:
             "platforms;android-${ANDROID_API}" \
             "platforms;android-36" \
             "build-tools;35.0.0" \
-            "cmake;3.22.1" > /dev/null
+            "cmake;3.22.1" \
+            "ndk;${ANDROID_NDK_VERSION}" > /dev/null
+
+      - name: Cache de Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
       - name: Dependencias
         uses: ramsey/composer-install@v3
