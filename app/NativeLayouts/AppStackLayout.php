@@ -1,6 +1,6 @@
 <?php
 
-namespace App\NativeComponents\Layouts;
+namespace App\NativeLayouts;
 
 use Native\Mobile\Edge\Layouts\Builders\NavBar;
 use Native\Mobile\Edge\Layouts\NativeLayout;

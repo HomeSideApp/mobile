@@ -38,7 +38,7 @@
                         <native:pressable
                             :native:key="$list['id']"
                             class="w-full rounded-lg bg-theme-surface p-4"
-                            @press="openList('{{ $list['id'] }}')"
+                            @press="openList({{ json_encode($list['id']) }})"
                         >
                             <native:row class="w-full items-center gap-3">
                                 <native:icon ios="cart.fill" android="shopping_cart" :size="20" class="text-theme-primary" />
@@ -61,7 +61,7 @@
                         <native:pressable
                             :native:key="$list['id']"
                             class="w-full rounded-lg bg-theme-surface p-4"
-                            @press="openHouseholdList('{{ $list['id'] }}')"
+                            @press="openHouseholdList({{ json_encode($list['id']) }})"
                         >
                             <native:row class="w-full items-center gap-3">
                                 <native:icon ios="house.fill" android="home" :size="20" class="text-theme-accent-foreground" />

@@ -18,7 +18,7 @@
                 <native:pressable
                     class="w-full rounded-lg border p-4"
                     :class="$scope === 'personal' ? 'border-theme-primary bg-theme-surface' : 'border-theme-outline bg-theme-surface'"
-                    @press="chooseScope('personal')"
+                    @press="chooseScope({{ json_encode("personal") }})"
                 >
                     <native:column class="w-full gap-1">
                         <native:text class="text-base font-semibold text-theme-on-surface">Solo para mí</native:text>
@@ -32,7 +32,7 @@
                     <native:pressable
                         class="w-full rounded-lg border p-4"
                         :class="$scope === 'household' ? 'border-theme-primary bg-theme-surface' : 'border-theme-outline bg-theme-surface'"
-                        @press="chooseScope('household')"
+                        @press="chooseScope({{ json_encode("household") }})"
                     >
                         <native:column class="w-full gap-1">
                             <native:text class="text-base font-semibold text-theme-on-surface">{{ $householdName }}</native:text>

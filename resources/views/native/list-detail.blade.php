@@ -30,8 +30,8 @@
                                 <native:pressable
                                     :native:key="$item['id']"
                                     class="h-[104] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $item['color'] }}]"
-                                    @press="toggle('{{ $item['id'] }}')"
-                                    @longPress="openItem('{{ $item['id'] }}')"
+                                    @press="toggle({{ json_encode($item['id']) }})"
+                                    @longPress="openItem({{ json_encode($item['id']) }})"
                                 >
                                     @if ($item['icon_url'] !== null)
                                         <native:image :src="$item['icon_url']" class="h-[26] w-[26]" fit="contain" />
@@ -54,7 +54,7 @@
                             @endforeach
 
                             @for ($filler = count($row); $filler < 3; $filler++)
-                                <native:column class="flex-1" />
+                                <native:column class="flex-1"></native:column>
                             @endfor
                         </native:row>
                     @endforeach
@@ -81,8 +81,8 @@
                                 <native:pressable
                                     :native:key="$item['id']"
                                     class="h-[104] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $item['color'] }}]"
-                                    @press="toggle('{{ $item['id'] }}')"
-                                    @longPress="openItem('{{ $item['id'] }}')"
+                                    @press="toggle({{ json_encode($item['id']) }})"
+                                    @longPress="openItem({{ json_encode($item['id']) }})"
                                 >
                                     @if ($item['icon_url'] !== null)
                                         <native:image :src="$item['icon_url']" class="h-[26] w-[26]" fit="contain" />
@@ -94,7 +94,7 @@
                             @endforeach
 
                             @for ($filler = count($row); $filler < 3; $filler++)
-                                <native:column class="flex-1" />
+                                <native:column class="flex-1"></native:column>
                             @endfor
                         </native:row>
                     @endforeach

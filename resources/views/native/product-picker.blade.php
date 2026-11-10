@@ -16,7 +16,7 @@
                         <native:pressable
                             :native:key="$category['id']"
                             class="rounded-full px-3 py-1.5 bg-[{{ $category['color'] }}]"
-                            @press="selectCategory('{{ $category['id'] }}')"
+                            @press="selectCategory({{ json_encode($category['id']) }})"
                         >
                             <native:text class="text-[11px] font-semibold" :color="$category['color_text']">
                                 {{ $category['name'] }}
@@ -44,7 +44,7 @@
                             <native:pressable
                                 :native:key="$product['id']"
                                 class="flex-1 items-center gap-2 rounded-lg p-3 bg-[{{ $product['color'] }}]"
-                                @press="addProduct('{{ $product['id'] }}')"
+                                @press="addProduct({{ json_encode($product['id']) }})"
                             >
                                 <native:row class="w-full items-center gap-2">
                                     @if ($product['icon_url'] !== null)
@@ -65,7 +65,7 @@
                         @endforeach
 
                         @for ($filler = count($row); $filler < 2; $filler++)
-                            <native:column class="flex-1" />
+                            <native:column class="flex-1"></native:column>
                         @endfor
                     </native:row>
                 @endforeach
@@ -95,7 +95,7 @@
                             <native:pressable
                                 :native:key="$product['id']"
                                 class="flex-1 items-center gap-2 rounded-lg p-3 bg-[{{ $product['color'] }}]"
-                                @press="addProduct('{{ $product['id'] }}')"
+                                @press="addProduct({{ json_encode($product['id']) }})"
                             >
                                 <native:row class="w-full items-center gap-2">
                                     @if ($product['icon_url'] !== null)
@@ -116,7 +116,7 @@
                         @endforeach
 
                         @for ($filler = count($row); $filler < 2; $filler++)
-                            <native:column class="flex-1" />
+                            <native:column class="flex-1"></native:column>
                         @endfor
                     </native:row>
                 @endforeach

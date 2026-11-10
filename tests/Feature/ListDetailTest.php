@@ -115,6 +115,21 @@ class ListDetailTest extends TestCase
             && $request['is_checked'] === true);
     }
 
+    public function test_pressing_a_rendered_card_invokes_the_callback_with_its_id(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/lists/list-1/items/item-1' => Http::response(['data' => ['id' => 'item-1']]),
+            '*/api/v1/lists/list-1' => Http::response($this->payload()),
+        ]);
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->press('toggle("item-1")');
+
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/lists/list-1/items/item-1')
+            && $request['is_checked'] === true);
+    }
+
     public function test_the_household_route_uses_the_household_prefix(): void
     {
         $this->connect();

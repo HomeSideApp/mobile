@@ -1,8 +1,6 @@
 <?php
 
 use App\NativeComponents\House;
-use App\NativeComponents\Layouts\AppStackLayout;
-use App\NativeComponents\Layouts\AppTabsLayout;
 use App\NativeComponents\ListCreate;
 use App\NativeComponents\ListDetail;
 use App\NativeComponents\Lists;
@@ -11,6 +9,8 @@ use App\NativeComponents\ProductPicker;
 use App\NativeComponents\Profile;
 use App\NativeComponents\Recipes;
 use App\NativeComponents\ServerSetup;
+use App\NativeLayouts\AppStackLayout;
+use App\NativeLayouts\AppTabsLayout;
 use Illuminate\Support\Facades\Route;
 
 /*
