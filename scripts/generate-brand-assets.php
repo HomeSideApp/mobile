@@ -6,7 +6,8 @@
  *   resources/brand/logo.png  (fuente: el mark canónico de HomeSide)
  *        ├── public/icon.png        1024x1024, opaco (iOS rechaza alfa)
  *        ├── public/splash.png      960x1440, fondo cálido del tema
- *        └── public/splash-dark.png 960x1440, fondo oscuro del tema
+ *        ├── public/splash-dark.png 960x1440, fondo oscuro del tema
+ *        └── public/logo-mark.png   mark recortado y transparente, para la UI
  *
  * Uso: php scripts/generate-brand-assets.php
  *
@@ -61,6 +62,72 @@ function compose(GdImage $logo, int $width, int $height, array $background, floa
     return $canvas;
 }
 
+/**
+ * Recorta el margen transparente del mark.
+ *
+ * El logo canónico viene con aire alrededor (pensado para el lockup), pero en
+ * pantalla a 72pt ese aire hace que el mark se vea chico. Acá se busca la caja
+ * real de píxeles opacos y se recorta.
+ */
+function trimTransparent(GdImage $image): GdImage
+{
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    $minX = $width;
+    $minY = $height;
+    $maxX = -1;
+    $maxY = -1;
+
+    for ($y = 0; $y < $height; $y++) {
+        for ($x = 0; $x < $width; $x++) {
+            $rgba = imagecolorat($image, $x, $y);
+            $alpha = ($rgba & 0x7F000000) >> 24;
+
+            if ($alpha >= 120) {
+                continue;
+            }
+
+            $minX = min($minX, $x);
+            $maxX = max($maxX, $x);
+            $minY = min($minY, $y);
+            $maxY = max($maxY, $y);
+        }
+    }
+
+    if ($maxX < 0 || $maxY < 0) {
+        return $image;
+    }
+
+    $cropped = imagecreatetruecolor($maxX - $minX + 1, $maxY - $minY + 1);
+    imagealphablending($cropped, false);
+    imagesavealpha($cropped, true);
+    imagecopy($cropped, $image, 0, 0, $minX, $minY, $maxX - $minX + 1, $maxY - $minY + 1);
+
+    return $cropped;
+}
+
+/**
+ * Mark recortado sobre canvas transparente, listo para la UI nativa.
+ */
+function markCanvas(GdImage $mark, int $size, float $fill): GdImage
+{
+    $canvas = imagecreatetruecolor($size, $size);
+    imagealphablending($canvas, false);
+    imagesavealpha($canvas, true);
+    imagefill($canvas, 0, 0, imagecolorallocatealpha($canvas, 0, 0, 0, 127));
+
+    $side = (int) round($size * $fill);
+    $scaled = imagescale($mark, $side, $side, IMG_BICUBIC);
+
+    if ($scaled !== false) {
+        imagealphablending($canvas, true);
+        imagecopy($canvas, $scaled, (int) (($size - $side) / 2), (int) (($size - $side) / 2), 0, 0, $side, $side);
+    }
+
+    return $canvas;
+}
+
 function save(GdImage $image, string $path): void
 {
     if (! imagepng($image, $path, 9)) {
@@ -75,6 +142,9 @@ echo "Generando assets de marca\n";
 
 // Icono: 1024x1024 opaco, el mark ocupando ~62% (la zona segura del launcher).
 save(compose($logo, 1024, 1024, LIGHT_BACKGROUND, 0.62), $root.'/public/icon.png');
+
+// Mark para la UI: transparente, recortado y con un 6% de aire.
+save(markCanvas(trimTransparent($logo), 512, 0.88), $root.'/public/logo-mark.png');
 
 // Splash: full-bleed portrait; NativePHP lo reduce a cada densidad.
 save(compose($logo, 960, 1440, LIGHT_BACKGROUND, 0.42, 0.44), $root.'/public/splash.png');

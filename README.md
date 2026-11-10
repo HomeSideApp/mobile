@@ -199,6 +199,10 @@ php scripts/generate-brand-assets.php
   adaptativo de Android usa la misma tonalidad de fondo para que el recorte de
   la máscara no se note).
 - **Splash**: 960x1440 en claro (`#FBFCFA`) y oscuro (`#0B2F2F`).
+- **`logo-mark.png`**: el mark recortado y transparente, para las pantallas
+  (cabecera de conexión y login). Las pantallas lo referencian como
+  `src="logo-mark.png"`: un path relativo se resuelve contra el `public/`
+  empaquetado en la app, así que no depende de red ni del servidor elegido.
 - NativePHP regenera los mipmaps y las densidades del splash en cada build.
 
 ## Identidad de la app

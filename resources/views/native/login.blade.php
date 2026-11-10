@@ -3,7 +3,7 @@
         <native:column class="w-full gap-5 p-5">
 
             <native:column class="w-full items-center gap-2 pt-6">
-                <native:icon ios="house.fill" android="home" :size="32" class="text-theme-primary" />
+                <native:image src="logo-mark.png" :width="72" :height="72" fit="contain" alt="HomeSide" />
                 <native:text class="text-2xl font-bold text-theme-on-background">HomeSide</native:text>
                 <native:text class="text-center text-sm text-theme-on-surface-variant">
                     @if ($step === 'credentials')

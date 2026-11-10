@@ -31,6 +31,14 @@ if [ -d "$android_dir" ]; then
     # de marca está compuesto sobre el cálido del tema, así que se igualan para
     # que el cuadrado del foreground no se note dentro de la máscara.
     launcher_background="$android_dir/app/src/main/res/drawable/ic_launcher_background.xml"
+    # El splash es una imagen estática; el arranque de PHP tarda, así que se le
+    # suma un spinner nativo para que no parezca colgada.
+    main_activity="$android_dir/app/src/main/java/com/nativephp/mobile/ui/MainActivity.kt"
+    if [ -f "$main_activity" ]; then
+        php /app/scripts/patch-android-splash.php "$main_activity" \
+            || echo "aviso: el splash quedó sin spinner (cambió la plantilla de NativePHP)"
+    fi
+
     if [ -f "$launcher_background" ]; then
         cat > "$launcher_background" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>

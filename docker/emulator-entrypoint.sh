@@ -12,6 +12,10 @@ AVD_NAME="${AVD_NAME:-homeside}"
 MEMORY="${EMULATOR_MEMORY:-2048}"
 CORES="${EMULATOR_CORES:-2}"
 
+# Un arranque anterior que murió (segfault bajo carga) deja locks del AVD y el
+# emulador se niega a arrancar: "Running multiple emulators with the same AVD".
+rm -f "${HOME}"/.android/avd/*.lock "${HOME}"/.android/avd/*.avd/*.lock 2>/dev/null || true
+
 echo "==> adb server (0.0.0.0:5037)"
 adb -a -P 5037 nodaemon server &
 ADB_PID=$!
