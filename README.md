@@ -107,10 +107,13 @@ Backlog detallado: `../odd/tasks/homeside-mobile.md`.
 
 `.github/workflows/android-dev.yml` corre en dos jobs:
 
-1. **Tests** — PHP 8.4, extensiones, `composer install` y `php artisan test`.
+1. **Tests** — PHP 8.5, extensiones, `composer install` y `php artisan test`.
 2. **APK de desarrollo** — solo si los tests pasan y no es un PR: instala el
    PHP embebido (`native:install`), compila con `native:package` firmado y
    publica el resultado.
+
+> El proyecto requiere **PHP 8.5**: `nativephp/mobile` arrastra `endroid/qr-code`,
+> que ya pide `^8.5`. La imagen de desarrollo y el CI usan esa versión.
 
 El APK se puede bajar de dos lugares:
 
