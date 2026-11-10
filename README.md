@@ -105,12 +105,32 @@ Backlog detallado: `../odd/tasks/homeside-mobile.md`.
 
 ## APK automático en cada push a `develop`
 
-`.github/workflows/android-dev.yml` corre en dos jobs:
+`.github/workflows/android-dev.yml` corre en tres jobs:
 
-1. **Tests** — PHP 8.5, extensiones, `composer install` y `php artisan test`.
-2. **APK de desarrollo** — solo si los tests pasan y no es un PR: instala el
-   PHP embebido (`native:install`), compila con `native:package` firmado y
-   publica el resultado.
+1. **¿Cambió código?** — compara el push contra el commit anterior y decide si
+   el binario puede ser distinto.
+2. **Tests** — PHP 8.5, extensiones, `composer install` y `php artisan test`.
+   Corre en todo push y PR: un cambio de tests o de CI también merece verde.
+3. **APK de desarrollo** — solo si los tests pasaron **y** cambió código, o si
+   lo disparás a mano.
+
+### Qué cuenta como cambio de código
+
+| Dispara el APK | No lo dispara |
+| --- | --- |
+| `app/`, `bootstrap/`, `config/`, `database/`, `lang/`, `public/`, `resources/`, `routes/` | `tests/`, `README.md`, `docs/` |
+| `composer.json`, `composer.lock`, `artisan` | `.github/`, `docker/`, `Makefile`, `compose.yaml` |
+| `nativephp.lock`, `.env.example` | `phpunit.xml`, `scripts/` |
+
+El primer push de una rama y un force-push también construyen (no hay con qué
+comparar). Si el diff no se puede calcular, construye igual: es preferible un
+APK de más que uno que falta.
+
+### Disparo manual
+
+`Actions → Android dev build → Run workflow` con la opción **Construir y
+publicar el APK** (por defecto activada). Sirve para reconstruir sin tocar
+código, o para correr solo los tests desactivándola.
 
 > El proyecto requiere **PHP 8.5**: `nativephp/mobile` arrastra `endroid/qr-code`,
 > que ya pide `^8.5`. La imagen de desarrollo y el CI usan esa versión.

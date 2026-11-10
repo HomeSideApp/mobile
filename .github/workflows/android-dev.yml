@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [develop]
   workflow_dispatch:
+    inputs:
+      build_apk:
+        description: 'Construir y publicar el APK'
+        type: boolean
+        default: true
 
 concurrency:
   group: android-dev-${{ github.ref }}
@@ -25,6 +30,83 @@ env:
   ANDROID_NDK_VERSION: '27.0.12077973'
 
 jobs:
+  changes:
+    name: ¿Cambió código?
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Rutas que afectan el bundle nativo
+        id: diff
+        run: |
+          set -euo pipefail
+
+          # Lo que entra en el APK. Tests, docs, CI y herramientas de
+          # desarrollo quedan afuera: cambian el repo, no el binario.
+          pattern='^(app|bootstrap|config|database|lang|public|resources|routes)/|^(composer\.json|composer\.lock|artisan|nativephp\.lock|\.env\.example)$'
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "Disparo manual: se construye." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${GITHUB_EVENT_NAME}" != "push" ]; then
+            echo "Evento ${GITHUB_EVENT_NAME}: el APK no se publica acá." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          before="${{ github.event.before }}"
+
+          if [ -z "$before" ] || [[ "$before" =~ ^0+$ ]]; then
+            echo "Primer push de la rama: se construye." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git rev-parse --verify --quiet "${before}^{commit}" > /dev/null; then
+            git fetch --quiet origin "$before" || true
+          fi
+
+          if ! changed=$(git diff --name-only "$before" "$GITHUB_SHA" 2> /dev/null); then
+            echo "No pudimos comparar con el commit anterior: se construye igual." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -z "$changed" ]; then
+            echo "Sin archivos cambiados." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          matched=$(echo "$changed" | grep -E "$pattern" || true)
+
+          {
+            echo "### Archivos cambiados"
+            echo '```'
+            echo "$changed"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -n "$matched" ]; then
+            {
+              echo "**Afectan el APK:**"
+              echo '```'
+              echo "$matched"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Ninguno afecta el APK: no se construye. Usá *Run workflow* para forzarlo." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   tests:
     name: Tests
     runs-on: ubuntu-latest
@@ -51,8 +133,13 @@ jobs:
 
   apk:
     name: APK de desarrollo
-    needs: tests
-    if: github.event_name != 'pull_request'
+    needs: [tests, changes]
+    if: >-
+      !cancelled() && needs.tests.result == 'success' &&
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.build_apk != 'false') ||
+        (github.event_name == 'push' && needs.changes.outputs.code == 'true')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
