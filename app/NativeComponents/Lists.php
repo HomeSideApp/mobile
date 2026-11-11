@@ -9,7 +9,6 @@ use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
-use Native\Mobile\Facades\Browser;
 
 /**
  * Listas de la compra del usuario: las personales y las del hogar activo.
@@ -100,11 +99,12 @@ final class Lists extends NativeComponent
         $this->navigate('/login');
     }
 
+    /**
+     * La descarga y el instalador viven en Perfil: desde acá sólo se navega.
+     */
     public function openUpdate(): void
     {
-        if ($this->updateUrl !== null) {
-            Browser::open($this->updateUrl);
-        }
+        $this->navigate('/profile');
     }
 
     /**

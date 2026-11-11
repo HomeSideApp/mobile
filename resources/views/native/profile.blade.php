@@ -46,11 +46,25 @@
                         @endif
                     </native:column>
 
+                    @if ($downloadStatus === 'running')
+                        <native:row class="w-full items-center gap-2">
+                            <native:activity-indicator />
+                            <native:text class="flex-1 text-sm text-theme-on-surface">
+                                Descargando… {{ $downloadProgress }}%
+                            </native:text>
+                        </native:row>
+                    @endif
+
                     <native:button
-                        label="Descargar actualización"
+                        :label="$downloadStatus === 'failed' ? 'Reintentar descarga' : ($downloadStatus === 'successful' ? 'Instalar' : 'Descargar actualización')"
                         class="w-full"
+                        :disabled="$downloadStatus === 'running'"
                         @press="downloadUpdate"
                     />
+
+                    @if ($downloadMessage)
+                        <native:text class="text-xs text-theme-on-surface-variant">{{ $downloadMessage }}</native:text>
+                    @endif
                 @elseif (($update['state'] ?? '') === 'up_to_date')
                     <native:text class="text-sm text-theme-success">Estás al día.</native:text>
                 @elseif (($update['state'] ?? '') === 'unavailable')
@@ -67,8 +81,7 @@
                 />
 
                 <native:text class="text-xs text-theme-on-surface-variant">
-                    Las actualizaciones se instalan desde el navegador; Android va a pedir permiso
-                    la primera vez.
+                    Android va a pedir permiso para instalar la actualización la primera vez.
                 </native:text>
             </native:column>
 

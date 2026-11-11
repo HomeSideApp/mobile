@@ -25,7 +25,7 @@
                                     Hay una versión nueva{{ $updateVersion !== null ? ': '.$updateVersion : '' }}
                                 </native:text>
                                 <native:text class="text-xs text-theme-on-surface-variant">
-                                    Tocá para descargarla
+                                    Tocá para actualizar desde Perfil
                                 </native:text>
                             </native:column>
                         </native:row>

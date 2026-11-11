@@ -143,6 +143,25 @@ que la saltea, nunca ofrece bajar de versión, y cualquier fallo se muestra como
 instalado marca la actualización como obligatoria (la pantalla bloqueante llega
 en la fase B).
 
+### Instalador dentro de la app (opcional)
+
+Por defecto `Perfil` abre el APK en el navegador. Si el plugin
+[`homeside/apk-updater`](https://github.com/HomeSideApp/NativePHP-APK-Updater)
+está instalado, la app descarga, verifica el SHA-256 e invoca el instalador de
+Android sin salir de la pantalla:
+
+```bash
+composer require homeside/apk-updater:dev-develop
+php artisan native:plugin:register homeside/apk-updater
+```
+
+El código está escrito para las dos situaciones (`Profile::inAppUpdater()`): si
+la clase no existe —o el dispositivo no es Android— cae al navegador. Por eso la
+dependencia es opcional y no está en `composer.json` todavía.
+
+> Cuidado al publicar el provider: `vendor:publish --tag=nativephp-plugins-provider --force`
+> borra los plugins ya registrados (`nativephp/mobile-ui` incluido).
+
 ## APK automático en cada push a `develop`
 
 `.github/workflows/android-dev.yml` corre en tres jobs:
