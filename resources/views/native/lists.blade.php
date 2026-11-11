@@ -13,6 +13,25 @@
                 </native:column>
             @else
 
+                @if ($updateAvailable)
+                    <native:pressable
+                        class="w-full rounded-lg border border-theme-primary bg-theme-surface p-3"
+                        @press="openUpdate"
+                    >
+                        <native:row class="w-full items-center gap-2">
+                            <native:icon ios="arrow.down.circle.fill" android="system_update" :size="20" class="text-theme-primary" />
+                            <native:column class="flex-1 gap-0.5">
+                                <native:text class="text-sm font-semibold text-theme-on-surface">
+                                    Hay una versión nueva{{ $updateVersion !== null ? ': '.$updateVersion : '' }}
+                                </native:text>
+                                <native:text class="text-xs text-theme-on-surface-variant">
+                                    Tocá para descargarla
+                                </native:text>
+                            </native:column>
+                        </native:row>
+                    </native:pressable>
+                @endif
+
                 <native:outlined-text-input
                     placeholder="Buscar una lista"
                     leading-icon="search"

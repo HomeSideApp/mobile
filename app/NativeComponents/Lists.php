@@ -3,11 +3,13 @@
 namespace App\NativeComponents;
 
 use App\Exceptions\HomesideException;
+use App\Services\Homeside\AppUpdateChecker;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
+use Native\Mobile\Facades\Browser;
 
 /**
  * Listas de la compra del usuario: las personales y las del hogar activo.
@@ -38,6 +40,12 @@ final class Lists extends NativeComponent
     public bool $needsLogin = false;
 
     public ?string $error = null;
+
+    public bool $updateAvailable = false;
+
+    public ?string $updateVersion = null;
+
+    public ?string $updateUrl = null;
 
     public function mount(): void
     {
@@ -92,6 +100,28 @@ final class Lists extends NativeComponent
         $this->navigate('/login');
     }
 
+    public function openUpdate(): void
+    {
+        if ($this->updateUrl !== null) {
+            Browser::open($this->updateUrl);
+        }
+    }
+
+    /**
+     * Sólo lee el último chequeo: acá no se sale a la red.
+     */
+    private function loadUpdateBanner(): void
+    {
+        $checker = new AppUpdateChecker;
+        $status = $checker->lastKnownStatus();
+
+        $this->updateAvailable = $checker->hasUpdate($status);
+        $this->updateVersion = is_string($status['latest_version'] ?? null) ? $status['latest_version'] : null;
+        $this->updateUrl = $this->updateAvailable && is_string($status['apk_url'] ?? null)
+            ? $status['apk_url']
+            : null;
+    }
+
     public function goToServerSetup(): void
     {
         $this->navigate('/server-setup');
@@ -101,6 +131,8 @@ final class Lists extends NativeComponent
     {
         $this->loading = true;
         $this->error = null;
+
+        $this->loadUpdateBanner();
 
         if (! (new Session)->isAuthenticated()) {
             $this->needsLogin = true;

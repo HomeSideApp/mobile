@@ -103,6 +103,46 @@ iOS se compila **solo en macOS** (Xcode 26+).
 
 Backlog detallado: `../odd/tasks/homeside-mobile.md`.
 
+## Actualizaciones y canales
+
+La app se actualiza fuera de la tienda: consulta un **manifiesto JSON** publicado
+junto a cada APK y, si hay algo nuevo, ofrece el link de descarga. El usuario
+elige el canal en **Perfil**.
+
+| Canal | Fuente | Cuándo |
+|---|---|---|
+| **Desarrollo** (por defecto) | release rodante `dev-latest` | cada push a `develop` |
+| **Estable** | `releases/latest`, o sea el último tag `v*` | cuando creás un tag |
+
+```bash
+# cortar una versión estable
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+Versionado:
+
+| | `version` | `version_code` |
+|---|---|---|
+| dev | `0.1.<run_number>-dev` | `github.run_number` |
+| stable | el tag sin la `v` (`0.2.0`) | `github.run_number` |
+
+`version_code` sale de `run_number` para que **siempre suba**: Android lo usa
+para aceptar la instalación encima de la anterior y la app para comparar.
+
+Manifiestos (assets del release, no la API de GitHub — sin token limita a 60
+requests/hora por IP):
+
+```
+dev     https://github.com/HomeSideApp/mobile/releases/download/dev-latest/latest.json
+stable  https://github.com/HomeSideApp/mobile/releases/latest/download/latest.json
+```
+
+Reglas del chequeo (`AppUpdateChecker`): una consulta cada 24 h, botón manual
+que la saltea, nunca ofrece bajar de versión, y cualquier fallo se muestra como
+"no pudimos consultar" sin romper la pantalla. Un `min_version_code` mayor al
+instalado marca la actualización como obligatoria (la pantalla bloqueante llega
+en la fase B).
+
 ## APK automático en cada push a `develop`
 
 `.github/workflows/android-dev.yml` corre en tres jobs:
@@ -111,8 +151,9 @@ Backlog detallado: `../odd/tasks/homeside-mobile.md`.
    el binario puede ser distinto.
 2. **Tests** — PHP 8.5, extensiones, `composer install` y `php artisan test`.
    Corre en todo push y PR: un cambio de tests o de CI también merece verde.
-3. **APK de desarrollo** — solo si los tests pasaron **y** cambió código, o si
-   lo disparás a mano.
+3. **APK** — solo si los tests pasaron **y** cambió código, o si lo disparás a
+   mano. Publica en `dev-latest` (rama `develop`) o como release estable
+   (tag `v*`), siempre con su `latest.json`.
 
 ### Qué cuenta como cambio de código
 

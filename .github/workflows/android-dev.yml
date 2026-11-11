@@ -1,12 +1,17 @@
-name: Android dev build
+name: Android
 
-# Cada push a `develop` corre la suite y, si pasa, publica un APK instalable.
-# El APK queda como artifact del run y además en el release rodante
-# `dev-latest`, que tiene una URL estable para bajarlo desde el teléfono.
+# Dos canales, un solo pipeline:
+#
+#   develop  → build de desarrollo, publicado en el release rodante `dev-latest`
+#   v*       → release estable (tag semver), publicado como release normal
+#
+# Cada publicación lleva un `latest.json` que la app consulta para saber si hay
+# actualización. El usuario elige en Perfil si sigue `dev` o `stable`.
 
 on:
   push:
     branches: [develop]
+    tags: ['v*']
   pull_request:
     branches: [develop]
   workflow_dispatch:
@@ -17,7 +22,7 @@ on:
         default: true
 
 concurrency:
-  group: android-dev-${{ github.ref }}
+  group: android-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -58,6 +63,12 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" != "push" ]; then
             echo "Evento ${GITHUB_EVENT_NAME}: el APK no se publica acá." >> "$GITHUB_STEP_SUMMARY"
             echo "code=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "Tag ${GITHUB_REF_NAME}: release estable, se construye." >> "$GITHUB_STEP_SUMMARY"
+            echo "code=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -131,17 +142,22 @@ jobs:
       - name: PHPUnit
         run: php artisan test --compact
 
-  apk:
-    name: APK de desarrollo
+  build:
+    name: APK (${{ github.ref_type == 'tag' && 'estable' || 'desarrollo' }})
     needs: [tests, changes]
     if: >-
       !cancelled() && needs.tests.result == 'success' &&
       (
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.build_apk != 'false') ||
-        (github.event_name == 'push' && needs.changes.outputs.code == 'true')
+        (github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v')) ||
+        (github.ref_type == 'branch' && (
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.build_apk != 'false') ||
+          (github.event_name == 'push' && needs.changes.outputs.code == 'true')
+        ))
       )
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      CHANNEL: ${{ github.ref_type == 'tag' && 'stable' || 'dev' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -187,12 +203,48 @@ jobs:
       - name: Dependencias
         uses: ramsey/composer-install@4
 
-      - name: Entorno
+      - name: Versión de la app
+        id: version
         run: |
+          set -euo pipefail
+
+          if [ "${CHANNEL}" = "stable" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="0.1.${GITHUB_RUN_NUMBER}-dev"
+          fi
+
+          # version_code tiene que subir siempre: lo usa Android para aceptar
+          # la actualización encima de la instalada, y la app para comparar.
+          VERSION_CODE="${GITHUB_RUN_NUMBER}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+
+      - name: Entorno
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          set -euo pipefail
           cp .env.example .env
           php artisan key:generate --no-interaction
-          echo "NATIVEPHP_ANDROID_SDK_LOCATION=${ANDROID_HOME}" >> .env
-          echo "NATIVEPHP_GRADLE_TIMEOUT=900" >> .env
+
+          set_env() {
+            local key="$1" value="$2"
+            if grep -q "^${key}=" .env; then
+              sed -i "s|^${key}=.*|${key}=${value}|" .env
+            else
+              echo "${key}=${value}" >> .env
+            fi
+          }
+
+          set_env NATIVEPHP_APP_VERSION "$VERSION"
+          set_env NATIVEPHP_APP_VERSION_CODE "$VERSION_CODE"
+          set_env NATIVEPHP_ANDROID_SDK_LOCATION "$ANDROID_HOME"
+          set_env NATIVEPHP_GRADLE_TIMEOUT 900
+
+          echo "Versión ${VERSION} (code ${VERSION_CODE}), canal ${CHANNEL}"
 
       - name: Proyecto nativo (PHP embebido + plugins)
         run: php artisan native:install android --no-interaction
@@ -239,56 +291,87 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs dist/app-release.apk
 
-      - name: Nombre del artifact
+      - name: Nombre del artifact y manifiesto
         id: artifact
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          mv dist/app-release.apk "dist/homeside-${GITHUB_SHA::7}.apk"
-          cp "dist/homeside-${GITHUB_SHA::7}.apk" dist/homeside-dev.apk
-          echo "versioned=dist/homeside-${GITHUB_SHA::7}.apk" >> "$GITHUB_OUTPUT"
-          sha256sum dist/homeside-dev.apk | cut -c1-64 > dist/homeside-dev.apk.sha256
-          cat dist/homeside-dev.apk.sha256
+          set -euo pipefail
+
+          APK="dist/homeside-${VERSION}.apk"
+          mv dist/app-release.apk "$APK"
+
+          if [ "${CHANNEL}" = "dev" ]; then
+            # Nombre estable para humanos; el manifiesto apunta acá.
+            cp "$APK" dist/homeside-dev.apk
+            APK_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/dev-latest/homeside-dev.apk"
+            UPLOAD="dist/homeside-dev.apk"
+          else
+            APK_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/homeside-${VERSION}.apk"
+            UPLOAD="$APK"
+          fi
+
+          SHA="$(sha256sum "$UPLOAD" | cut -d' ' -f1)"
+
+          php scripts/write-update-manifest.php \
+            --channel="${CHANNEL}" \
+            --version="${VERSION}" \
+            --version-code="${VERSION_CODE}" \
+            --min-version-code="${MIN_VERSION_CODE:-0}" \
+            --apk-url="${APK_URL}" \
+            --sha256="${SHA}" \
+            --notes="$(git log -1 --pretty=%s)" \
+            --output=dist/latest.json
+
+          echo "upload=${UPLOAD}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "url=${APK_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Artifact del run
         uses: actions/upload-artifact@v7
         with:
           name: homeside-apk-${{ github.sha }}
           path: |
-            ${{ steps.artifact.outputs.versioned }}
-            dist/homeside-dev.apk.sha256
+            ${{ steps.artifact.outputs.upload }}
+            dist/latest.json
           if-no-files-found: error
           retention-days: 30
 
-      - name: Release rodante dev-latest
+      - name: Publicar release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: dev-latest
-          name: HomeSide dev (última de develop)
-          prerelease: true
-          make_latest: false
+          # dev → release rodante `dev-latest` (prerelease, no compite por "latest")
+          # stable → release del tag, marcado como latest
+          tag_name: ${{ env.CHANNEL == 'dev' && 'dev-latest' || github.ref_name }}
+          name: ${{ env.CHANNEL == 'dev' && 'HomeSide dev (última de develop)' || format('HomeSide {0}', steps.version.outputs.version) }}
+          prerelease: ${{ env.CHANNEL == 'dev' }}
+          make_latest: ${{ env.CHANNEL == 'stable' }}
           fail_on_unmatched_files: true
           body: |
-            Build automática de `develop`.
+            Canal: `${{ env.CHANNEL }}`
+            Versión: `${{ steps.version.outputs.version }}` (code `${{ steps.version.outputs.version_code }}`)
+            Keystore: `${{ steps.keystore.outputs.source }}`
+            Commit: `${{ github.sha }}` por @${{ github.actor }}
+            sha256: `${{ steps.artifact.outputs.sha256 }}`
 
-            - commit: `${{ github.sha }}`
-            - autor: @${{ github.actor }}
-            - keystore: `${{ steps.keystore.outputs.source }}`
-            - instalación: `adb install -r homeside-dev.apk`
-
-            Si el build anterior estaba firmado con otra keystore, Android va a
-            rechazar la actualización: desinstalá la app y volvé a instalar.
+            Instalación: `adb install -r homeside-*.apk`, o abrir el APK en el
+            teléfono. Si el build anterior estaba firmado con otra keystore,
+            Android va a pedir desinstalar antes de actualizar.
           files: |
-            dist/homeside-dev.apk
-            dist/homeside-dev.apk.sha256
+            ${{ steps.artifact.outputs.upload }}
+            dist/latest.json
 
       - name: Resumen
         run: |
           {
-            echo "### APK listo"
+            echo "### APK ${{ env.CHANNEL }} listo"
             echo ""
             echo "| | |"
             echo "| --- | --- |"
-            echo "| commit | \`${GITHUB_SHA}\` |"
+            echo "| versión | \`${{ steps.version.outputs.version }}\` (code \`${{ steps.version.outputs.version_code }}\`) |"
+            echo "| canal | \`${{ env.CHANNEL }}\` |"
             echo "| keystore | \`${{ steps.keystore.outputs.source }}\` |"
-            echo "| descarga | [homeside-dev.apk](https://github.com/${{ github.repository }}/releases/download/dev-latest/homeside-dev.apk) |"
-            echo "| sha256 | \`$(cat dist/homeside-dev.apk.sha256)\` |"
+            echo "| descarga | ${{ steps.artifact.outputs.url }} |"
+            echo "| sha256 | \`${{ steps.artifact.outputs.sha256 }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -3,10 +3,12 @@
 namespace App\NativeComponents;
 
 use App\Exceptions\HomesideException;
+use App\Services\Homeside\AppUpdateChecker;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\Session;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
+use Native\Mobile\Facades\Browser;
 
 /**
  * Perfil: datos de la cuenta, servidor actual, cierre de sesión y cambio de
@@ -33,6 +35,18 @@ final class Profile extends NativeComponent
 
     public ?string $error = null;
 
+    public string $channel = 'dev';
+
+    /** @var array<string, mixed> */
+    public array $update = [];
+
+    public bool $checkingUpdate = false;
+
+    public bool $updateAvailable = false;
+
+    /** @var array<string, array{label: string, description: string}> */
+    public array $channels = [];
+
     public function mount(): void
     {
         $this->load();
@@ -51,6 +65,46 @@ final class Profile extends NativeComponent
     public function changeServer(): void
     {
         $this->navigate('/server-setup');
+    }
+
+    /**
+     * Cambiar de canal invalida el resultado cacheado del canal anterior.
+     */
+    public function setChannel(string $channel): void
+    {
+        $checker = new AppUpdateChecker;
+
+        if (! $checker->setChannel($channel)) {
+            return;
+        }
+
+        $this->channel = $checker->channel();
+        $this->applyUpdate($checker->status());
+    }
+
+    public function checkForUpdates(): void
+    {
+        if ($this->checkingUpdate) {
+            return;
+        }
+
+        $checker = new AppUpdateChecker;
+
+        $this->checkingUpdate = true;
+        $this->applyUpdate($checker->status(force: true));
+        $this->checkingUpdate = false;
+    }
+
+    /**
+     * Abre el APK en el navegador: el sistema descarga y ofrece instalar.
+     */
+    public function downloadUpdate(): void
+    {
+        $url = $this->update['apk_url'] ?? null;
+
+        if (is_string($url) && $url !== '') {
+            Browser::open($url);
+        }
     }
 
     public function goToLogin(): void
@@ -83,6 +137,11 @@ final class Profile extends NativeComponent
         $this->hasSession = $session->isAuthenticated();
         $this->error = null;
 
+        $checker = new AppUpdateChecker;
+        $this->channels = $checker->channels();
+        $this->channel = $checker->channel();
+        $this->applyUpdate($checker->status());
+
         $cached = $session->user();
 
         if (is_array($cached)) {
@@ -102,6 +161,15 @@ final class Profile extends NativeComponent
 
             $this->error = $exception->getMessage();
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $status
+     */
+    private function applyUpdate(array $status): void
+    {
+        $this->update = $status;
+        $this->updateAvailable = (new AppUpdateChecker)->hasUpdate($status);
     }
 
     /**
