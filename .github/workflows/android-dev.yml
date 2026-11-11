@@ -131,8 +131,16 @@ jobs:
           extensions: mbstring, intl, gd, zip, bcmath, pdo_sqlite, sqlite3, curl, xml, sockets
           coverage: none
 
+      - name: Cache de Composer
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
       - name: Dependencias
-        uses: ramsey/composer-install@4
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Entorno
         run: |
@@ -200,8 +208,16 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      - name: Cache de Composer
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
       - name: Dependencias
-        uses: ramsey/composer-install@4
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Versión de la app
         id: version
