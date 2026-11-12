@@ -71,6 +71,30 @@ make adb-connect HOST=192.168.1.50:5555           # teléfono por Wi-Fi (adb tcp
 make android                                      # compila e instala
 ```
 
+#### Teléfono por Wi-Fi (Android 11+)
+
+En el teléfono: Opciones de desarrollador → **Depuración inalámbrica**. Ahí hay
+dos puertos distintos y confundirlos es el error habitual:
+
+- **"Emparejar dispositivo con código"** da un `IP:puerto` efímero y un código
+  de 6 dígitos. Se usan **una vez**, con `adb-pair`.
+- La pantalla principal da el `IP:puerto` de conexión, distinto del anterior. Se
+  usa **cada vez** que se reinicia la depuración, con `adb-wifi`.
+
+```bash
+make adb-pair ADDR=192.168.1.50:41234 PAIR_CODE=123456   # una sola vez
+make adb-wifi ADDR=192.168.1.50:37021                    # reconectar
+make adb-devices                                         # verificar
+```
+
+El servidor adb vive en el contenedor `app`, así que todas las órdenes lo
+comparten (`exec`, no `run --rm`: un contenedor nuevo es un servidor nuevo y se
+pierde la conexión). La clave de adb (`adbkey`) queda en el volumen `adb-home`,
+por eso el emparejamiento sobrevive a `make down` y no hay que repetirlo.
+
+mDNS no funciona dentro de Docker (sin multicast): siempre hay que pasar
+`IP:puerto` a mano, nunca `adb pair` a secas.
+
 ### 3. Jump
 
 `make jump IP=<tu-ip-lan>`. Aviso: Jump renderiza en su **WebView**, así que

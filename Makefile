@@ -94,11 +94,30 @@ android-emulator: ## Corre la app en el emulador headless del compose
 plugin-list: ## Lista los plugins NativePHP registrados
 > $(COMPOSE) run --rm $(SERVICE) php artisan native:plugin:list
 
+# adb vive dentro de un contenedor, y `run --rm` creaba uno nuevo en cada
+# comando: el servidor adb moría con él y el emparejamiento WiFi se perdía. Con
+# `up -d` el contenedor queda vivo y todas las órdenes comparten un servidor.
+adb-up: ## Levanta el contenedor que sirve de servidor adb
+> @$(COMPOSE) up -d $(SERVICE) >/dev/null
+
+adb-pair: ## Empareja un teléfono por WiFi: make adb-pair ADDR=ip:puerto PAIR_CODE=123456
+> @test -n "$(ADDR)" -a -n "$(PAIR_CODE)" || { echo "Uso: make adb-pair ADDR=192.168.1.23:41234 PAIR_CODE=123456"; echo "El puerto y el código salen de 'Emparejar dispositivo con código'."; exit 1; }
+> @$(MAKE) --no-print-directory adb-up
+> $(COMPOSE) exec -T $(SERVICE) adb pair $(ADDR) $(PAIR_CODE)
+
+adb-wifi: ## Conecta un teléfono ya emparejado: make adb-wifi ADDR=192.168.1.23:37021
+> @test -n "$(ADDR)" || { echo "Uso: make adb-wifi ADDR=192.168.1.23:37021"; echo "Ese puerto es el de 'Depuración inalámbrica', no el de emparejamiento."; exit 1; }
+> @$(MAKE) --no-print-directory adb-up
+> $(COMPOSE) exec -T $(SERVICE) adb connect $(ADDR)
+> @$(COMPOSE) exec -T $(SERVICE) adb devices -l
+
 adb-connect: ## Conecta a un emulador del host: make adb-connect HOST=host.docker.internal:5555
-> $(COMPOSE) run --rm $(SERVICE) adb connect $(or $(HOST),host.docker.internal:5555)
+> @$(MAKE) --no-print-directory adb-up
+> $(COMPOSE) exec -T $(SERVICE) adb connect $(or $(HOST),host.docker.internal:5555)
 
 adb-devices: ## Lista dispositivos/emuladores vistos por el contenedor
-> $(COMPOSE) run --rm $(SERVICE) adb devices -l
+> @$(MAKE) --no-print-directory adb-up
+> $(COMPOSE) exec -T $(SERVICE) adb devices -l
 
 clean: ## Borra contenedor, imagen y volúmenes del proyecto
 > $(COMPOSE) down -v --rmi local
@@ -106,4 +125,4 @@ clean: ## Borra contenedor, imagen y volúmenes del proyecto
 clean-sdk: ## Borra el volumen del Android SDK (fuerza reinstalar NDK/CMake en el próximo build)
 > docker volume rm -f homeside-mobile_android-sdk
 
-.PHONY: help build build-php-only up down sh bootstrap install test pint serve jump jump-portable android emulator-build emulator-up emulator-status emulator-logs emulator-down android-emulator plugin-list adb-connect adb-devices clean
+.PHONY: help build build-php-only up down sh bootstrap install test pint serve jump jump-portable android emulator-build emulator-up emulator-status emulator-logs emulator-down android-emulator plugin-list adb-up adb-pair adb-wifi adb-connect adb-devices clean

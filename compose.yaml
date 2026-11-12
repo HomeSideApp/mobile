@@ -20,6 +20,9 @@ services:
       # El SDK vive en un volumen: el primer build instala NDK/CMake/platform 36
       # y esos ~2 GB sobreviven entre corridas del contenedor.
       - android-sdk:/opt/android-sdk
+      # `adbkey` vive acá. Sin volumen, cada contenedor nuevo genera una clave
+      # distinta y el teléfono pide emparejar otra vez en cada `up`.
+      - adb-home:/home/dev/.android
     environment:
       HOME: /home/dev
       ANDROID_HOME: /opt/android-sdk
@@ -84,6 +87,7 @@ services:
     stop_grace_period: 30s
 
 volumes:
+  adb-home:
   composer-cache:
   gradle-cache:
   android-sdk:
