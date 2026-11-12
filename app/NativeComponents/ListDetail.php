@@ -623,7 +623,22 @@ final class ListDetail extends NativeComponent
             return;
         }
 
-        $path = $files[0];
+        // El plugin manda cada archivo como objeto:
+        //   { path, mimeType, extension, type, takenAt?, latitude?, longitude? }
+        // Se acepta también un string suelto por si el contrato cambia.
+        $first = $files[0] ?? null;
+        $path = is_array($first) ? ($first['path'] ?? null) : $first;
+        $extension = is_array($first) && is_string($first['extension'] ?? null)
+            ? $first['extension']
+            : 'jpg';
+
+        if (! is_string($path) || $path === '') {
+            $this->itemError = __('app.list_detail.photo_failed');
+            $this->itemNotice = null;
+
+            return;
+        }
+
         $contents = @file_get_contents($path);
 
         if (! is_string($contents) || $contents === '') {
@@ -639,7 +654,7 @@ final class ListDetail extends NativeComponent
                 $this->listId,
                 $this->openItemId,
                 $contents,
-                basename($path) ?: 'photo.jpg',
+                'photo.'.$extension,
                 $this->householdId,
             );
         } catch (HomesideException $exception) {

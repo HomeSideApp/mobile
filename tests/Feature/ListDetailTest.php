@@ -267,7 +267,17 @@ class ListDetailTest extends TestCase
         Native::test(ListDetail::class, ['list' => 'list-1'])
             ->call('openItem', 'item-1')
             // El listener recibe los campos del evento por nombre.
-            ->emitNative(MediaSelected::class, ['success' => true, 'files' => [$path], 'count' => 1]);
+            // Forma real que manda el plugin: cada archivo es un objeto.
+            ->emitNative(MediaSelected::class, [
+                'success' => true,
+                'count' => 1,
+                'files' => [[
+                    'path' => $path,
+                    'mimeType' => 'image/jpeg',
+                    'extension' => 'jpg',
+                    'type' => 'image',
+                ]],
+            ]);
 
         Http::assertSent(fn ($request): bool => $request->method() === 'POST'
             && str_ends_with($request->url(), '/lists/list-1/items/item-1')
@@ -276,6 +286,21 @@ class ListDetailTest extends TestCase
         // El plugin no borra los archivos que deja en storage privado: lo hacemos
         // nosotros después de subirlos, o se acumulan para siempre.
         $this->assertFileDoesNotExist($path);
+    }
+
+    public function test_a_malformed_file_entry_is_reported(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->emitNative(MediaSelected::class, [
+                'success' => true,
+                'files' => [['mimeType' => 'image/jpeg']],
+                'count' => 1,
+            ])
+            ->assertSet('itemError', 'No pudimos leer la foto elegida.');
     }
 
     public function test_a_cancelled_pick_uploads_nothing(): void
