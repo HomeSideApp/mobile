@@ -200,10 +200,24 @@ final class Profile extends NativeComponent
             return;
         }
 
-        $result = $this->inAppUpdater()::install($this->downloadId);
+        try {
+            $result = $this->inAppUpdater()::install($this->downloadId);
+        } catch (\Throwable) {
+            // El plugin es opcional: si el lado nativo no contesta, la pantalla
+            // no puede caerse por eso.
+            $this->downloadStatus = 'failed';
+            $this->downloadMessage = 'No pudimos abrir el instalador de Android.';
+
+            return;
+        }
 
         if (($result['error'] ?? null) === 'unknown_sources_disabled') {
-            $this->inAppUpdater()::openInstallSettings();
+            try {
+                $this->inAppUpdater()::openInstallSettings();
+            } catch (\Throwable) {
+                // El mensaje alcanza aunque no podamos abrir los ajustes.
+            }
+
             $this->downloadMessage = 'Habilitá «instalar apps desconocidas» y volvé a intentar.';
 
             return;

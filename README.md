@@ -151,13 +151,19 @@ está instalado, la app descarga, verifica el SHA-256 e invoca el instalador de
 Android sin salir de la pantalla:
 
 ```bash
+composer config repositories.apk-updater vcs https://github.com/HomeSideApp/NativePHP-APK-Updater.git
 composer require homeside/apk-updater:dev-develop
 php artisan native:plugin:register homeside/apk-updater
 ```
 
+Mientras no haya un tag, la app sigue `dev-develop` del repo. El `type` del
+paquete tiene que ser `nativephp-plugin`: con `library` se instala y autoloada,
+pero el registro de NativePHP no lo ve y el APK se compila sin su Kotlin.
+
 El código está escrito para las dos situaciones (`Profile::inAppUpdater()`): si
 la clase no existe —o el dispositivo no es Android— cae al navegador. Por eso la
-dependencia es opcional y no está en `composer.json` todavía.
+dependencia es opcional y no está en `composer.json` todavía, y
+`tests/Feature/InAppUpdateTest.php` se saltea solo hasta que se instale.
 
 > Cuidado al publicar el provider: `vendor:publish --tag=nativephp-plugins-provider --force`
 > borra los plugins ya registrados (`nativephp/mobile-ui` incluido).
