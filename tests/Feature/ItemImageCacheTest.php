@@ -85,6 +85,21 @@ class ItemImageCacheTest extends TestCase
         $this->assertFileDoesNotExist(substr((string) $first, strlen('file://')));
     }
 
+    public function test_a_new_version_is_downloaded_without_clearing_the_cache(): void
+    {
+        $this->connect();
+        Http::fake(['*' => Http::response($this->jpeg())]);
+
+        // Sin `forget()`: el cambio de `updated_at` tiene que bastar.
+        $first = $this->cache()->url('list-1', 'item-1', null, 'v1');
+        $second = $this->cache()->url('list-1', 'item-1', null, 'v2');
+
+        $this->assertNotSame($first, $second);
+        $this->assertFileExists(substr((string) $second, strlen('file://')));
+        $this->assertFileDoesNotExist(substr((string) $first, strlen('file://')));
+        Http::assertSentCount(2);
+    }
+
     public function test_a_missing_image_returns_null_instead_of_writing_a_file(): void
     {
         $this->connect();

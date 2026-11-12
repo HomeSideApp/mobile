@@ -118,6 +118,9 @@ final class ListDetail extends NativeComponent
     /** idle | uploading | done | failed */
     public string $uploadState = 'idle';
 
+    /** Foto guardada antes de la subida, para volver atrás si falla. */
+    public ?string $previousImageUrl = null;
+
     public function mount(): void
     {
         (new LocaleService)->apply();
@@ -491,6 +494,7 @@ final class ListDetail extends NativeComponent
         $this->itemError = null;
         $this->itemNotice = null;
         $this->draftImageUrl = null;
+        $this->previousImageUrl = null;
         $this->uploadState = 'idle';
     }
 
@@ -576,6 +580,17 @@ final class ListDetail extends NativeComponent
         ));
     }
 
+    /**
+     * Vuelve a la foto anterior cuando la subida falla: el preview no puede
+     * quedarse mostrando un archivo que el servidor no aceptó.
+     */
+    private function rollbackImage(): void
+    {
+        $this->uploadState = 'failed';
+        $this->draftImageUrl = $this->previousImageUrl;
+        $this->previousImageUrl = null;
+    }
+
     public function selectIcon(string $name): void
     {
         $this->draftIcon = $name;
@@ -649,6 +664,7 @@ final class ListDetail extends NativeComponent
 
         // Se previsualiza lo elegido antes de subirlo: el archivo ya está en el
         // dispositivo y el usuario necesita ver que la selección funcionó.
+        $this->previousImageUrl = $this->draftImageUrl;
         $this->draftImageUrl = 'file://'.$path;
         $this->uploadState = 'uploading';
 
@@ -656,7 +672,7 @@ final class ListDetail extends NativeComponent
 
         if (! is_string($contents) || $contents === '') {
             $this->itemError = __('app.list_detail.photo_failed');
-            $this->uploadState = 'failed';
+            $this->rollbackImage();
 
             return;
         }
@@ -674,28 +690,32 @@ final class ListDetail extends NativeComponent
         } catch (HomesideException $exception) {
             $this->itemError = $exception->getMessage();
             $this->itemNotice = null;
-            $this->uploadState = 'failed';
+            $this->rollbackImage();
 
             return;
         }
 
         (new ItemImageCache)->forget($this->listId, $this->openItemId);
 
-        // El plugin de cámara deja los archivos elegidos en storage privado y no
-        // los borra nunca: una vez subida, la copia local no sirve.
-        if (is_file($path)) {
-            @unlink($path);
-        }
-
         $this->itemNotice = __('app.list_detail.photo_uploaded');
         $this->uploadState = 'done';
+        $this->previousImageUrl = null;
+
         $this->load();
 
-        // Tras recargar, la foto guardada es la que devuelve el servidor.
+        // Tras recargar, la foto que vale es la que devuelve el servidor. Si la
+        // recarga no trae el ítem (red, error), se conserva el archivo local:
+        // mejor mostrar la foto elegida que un hueco.
         $fresh = collect($this->pending)->firstWhere('id', $this->openItemId);
 
         if (is_array($fresh) && is_string($fresh['image_url'] ?? null)) {
             $this->draftImageUrl = $fresh['image_url'];
+        }
+
+        // El plugin de cámara deja los archivos elegidos en storage privado y no
+        // los borra nunca: sólo se descartan cuando el servidor ya tiene la foto.
+        if ($this->draftImageUrl !== 'file://'.$path && is_file($path)) {
+            @unlink($path);
         }
     }
 

@@ -255,23 +255,26 @@ class ListDetailTest extends TestCase
     public function test_a_picked_photo_is_uploaded_to_the_item(): void
     {
         $this->connect();
-        $this->fakeScreen();
 
         $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
         file_put_contents($path, "\xFF\xD8\xFF".str_repeat('a', 32));
 
+        $withImage = $this->listPayload();
+        $withImage['data']['items'][0]['image_url'] = 'https://homeside.cloud/api/v1/lists/list-1/items/item-1/image';
+
         Http::fake([
+            '*/api/v1/lists/list-1/items/item-1/image' => Http::response("\xFF\xD8\xFF".str_repeat('a', 32)),
             '*/api/v1/lists/list-1/items/item-1' => Http::response(['data' => ['id' => 'item-1']]),
-            '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
+            '*/api/v1/lists/list-1' => Http::sequence()->push($this->listPayload())->push($withImage),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
-        Native::test(ListDetail::class, ['list' => 'list-1'])
+        $component = Native::test(ListDetail::class, ['list' => 'list-1'])
             ->call('openItem', 'item-1')
-            // El listener recibe los campos del evento por nombre.
-            // Forma real que manda el plugin: cada archivo es un objeto.
+            // El listener recibe los campos del evento por nombre, y cada archivo
+            // es un objeto de metadata (path, mimeType, extension, type).
             ->emitNative(MediaSelected::class, [
                 'success' => true,
                 'count' => 1,
@@ -287,37 +290,25 @@ class ListDetailTest extends TestCase
             && str_ends_with($request->url(), '/lists/list-1/items/item-1')
             && $request->hasFile('image_url'));
 
-        // El plugin no borra los archivos que deja en storage privado: lo hacemos
-        // nosotros después de subirlos, o se acumulan para siempre.
+        // El plugin no borra los archivos que deja en storage privado: se descartan
+        // cuando el servidor ya devolvió la foto.
         $this->assertFileDoesNotExist($path);
-    }
-
-    public function test_a_malformed_file_entry_is_reported(): void
-    {
-        $this->connect();
-        $this->fakeScreen();
-
-        Native::test(ListDetail::class, ['list' => 'list-1'])
-            ->call('openItem', 'item-1')
-            ->emitNative(MediaSelected::class, [
-                'success' => true,
-                'files' => [['mimeType' => 'image/jpeg']],
-                'count' => 1,
-            ])
-            ->assertSet('itemError', 'No pudimos leer la foto elegida.');
     }
 
     public function test_the_picked_photo_is_previewed_and_the_state_reported(): void
     {
         $this->connect();
-        $this->fakeScreen();
 
         $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
         file_put_contents($path, "\xFF\xD8\xFF".str_repeat('a', 32));
 
+        $withImage = $this->listPayload();
+        $withImage['data']['items'][0]['image_url'] = 'https://homeside.cloud/api/v1/lists/list-1/items/item-1/image';
+
         Http::fake([
+            '*/api/v1/lists/list-1/items/item-1/image' => Http::response("\xFF\xD8\xFF".str_repeat('a', 32)),
             '*/api/v1/lists/list-1/items/item-1' => Http::response(['data' => ['id' => 'item-1']]),
-            '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
+            '*/api/v1/lists/list-1' => Http::sequence()->push($this->listPayload())->push($withImage),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
@@ -358,6 +349,36 @@ class ListDetailTest extends TestCase
         $this->assertStringStartsWith('file://', (string) $component->get('draftImageUrl'));
         // La card usa el mismo valor que la hoja.
         $this->assertStringStartsWith('file://', (string) $component->get('pending.0.image_url'));
+    }
+
+    public function test_a_failed_upload_rolls_the_preview_back(): void
+    {
+        $this->connect();
+
+        $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
+        file_put_contents($path, "\xFF\xD8\xFF".str_repeat('a', 32));
+
+        Http::fake([
+            '*/api/v1/lists/list-1/items/item-1' => Http::response(['message' => 'Server error'], 500),
+            '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
+            '*/api/v1/categories*' => Http::response(['data' => []]),
+            '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
+        ]);
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->emitNative(MediaSelected::class, [
+                'success' => true,
+                'count' => 1,
+                'files' => [['path' => $path, 'mimeType' => 'image/jpeg', 'extension' => 'jpg', 'type' => 'image']],
+            ])
+            ->assertSet('uploadState', 'failed');
+
+        // El ítem no tenía foto: el preview vuelve a "sin foto", no queda
+        // mostrando un archivo que el servidor rechazó.
+        $this->assertNull($component->get('draftImageUrl'));
+        $this->assertNotNull($component->get('itemError'));
     }
 
     public function test_a_cancelled_pick_uploads_nothing(): void

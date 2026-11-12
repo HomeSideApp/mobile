@@ -30,7 +30,7 @@ final class ItemImageCache
     public function url(string $listId, string $itemId, ?string $householdId = null, ?string $version = null): ?string
     {
         $extension = null;
-        $path = $this->find($listId, $itemId);
+        $path = $this->find($listId, $itemId, $version);
 
         if ($path === null) {
             $contents = $this->fetch($listId, $itemId, $householdId, $version);
@@ -73,18 +73,32 @@ final class ItemImageCache
         }
     }
 
-    private function find(string $listId, string $itemId): ?string
+    /**
+     * Busca la variante de *esta* versión. Antes devolvía el primer archivo que
+     * coincidía con el prefijo, así que una foto nueva seguía mostrando la
+     * vieja hasta borrar el cache a mano.
+     */
+    private function find(string $listId, string $itemId, ?string $version): ?string
     {
-        $matches = File::glob($this->directory().'/'.$this->prefix($listId, $itemId).'*') ?: [];
+        $base = $this->basePath($listId, $itemId, $version);
 
-        return $matches[0] ?? null;
+        foreach (File::glob($base.'.*') ?: [] as $file) {
+            return $file;
+        }
+
+        return null;
+    }
+
+    private function basePath(string $listId, string $itemId, ?string $version): string
+    {
+        $suffix = $version !== null ? '-'.substr(sha1($version), 0, 8) : '';
+
+        return $this->directory().'/'.$this->prefix($listId, $itemId).$suffix;
     }
 
     private function pathFor(string $listId, string $itemId, ?string $version, string $extension): string
     {
-        $suffix = $version !== null ? '-'.substr(sha1($version), 0, 8) : '';
-
-        return $this->directory().'/'.$this->prefix($listId, $itemId).$suffix.'.'.$extension;
+        return $this->basePath($listId, $itemId, $version).'.'.$extension;
     }
 
     private function prefix(string $listId, string $itemId): string

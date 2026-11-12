@@ -146,7 +146,7 @@
                                     @longPress="openItem({{ json_encode($item['id']) }})"
                                 >
                                     @if ($item['image_url'] !== null)
-                                        <native:image :src="$item['image_url']" class="h-[30] w-[30] rounded-md" fit="cover" />
+                                        <native:image :src="$item['image_url']" :width="34" :height="34" class="rounded-md" fit="cover" />
                                     @elseif ($item['icon_url'] !== null)
                                         <native:image :src="$item['icon_url']" class="h-[26] w-[26]" fit="contain" />
                                     @else
@@ -298,7 +298,16 @@
             {{-- Foto: preview de lo guardado o de lo recién elegido --}}
             <native:column class="w-full gap-2">
                 @if ($draftImageUrl !== null)
-                    <native:image :src="$draftImageUrl" class="h-[140] w-full rounded-lg" fit="cover" />
+                    <native:stack class="w-full h-[140]">
+                        <native:image :src="$draftImageUrl" class="h-[140] w-full rounded-lg" fit="cover" />
+
+                        @if ($uploadState === 'uploading')
+                            <native:progress-bar
+                                indeterminate
+                                class="absolute bottom-0 left-0 right-0 h-[4]"
+                            />
+                        @endif
+                    </native:stack>
                 @else
                     <native:column class="h-[100] w-full items-center justify-center rounded-lg border border-theme-outline bg-theme-surface-variant">
                         <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.photo_hint') }}</native:text>
@@ -306,10 +315,7 @@
                 @endif
 
                 @if ($uploadState === 'uploading')
-                    <native:row class="w-full items-center gap-2">
-                        <native:activity-indicator />
-                        <native:text class="flex-1 text-xs text-theme-on-surface-variant">{{ __('app.list_detail.uploading') }}</native:text>
-                    </native:row>
+                    <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.uploading') }}</native:text>
                 @endif
 
                 <native:button
@@ -377,7 +383,7 @@
                 />
 
                 <native:row class="w-full flex-wrap gap-2">
-                    @foreach ($filteredIcons() as $icon)
+                    @foreach ($this->filteredIcons() as $icon)
                         <native:pressable
                             :native:key="'icon-'.$icon['name']"
                             class="size-[44] items-center justify-center rounded-lg border"
