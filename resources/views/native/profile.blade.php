@@ -20,16 +20,12 @@
                     {{ __('app.profile.language') }}
                 </native:text>
 
-                @foreach ($locales as $option)
-                    <native:pressable
-                        :native:key="'locale-'.$option['code']"
-                        class="w-full rounded-lg border p-3"
-                        :class="$appLocale === $option['code'] ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
-                        @press="setLocale({{ json_encode($option['code']) }})"
-                    >
-                        <native:text class="text-sm font-semibold text-theme-on-surface">{{ $option['label'] }}</native:text>
-                    </native:pressable>
-                @endforeach
+                <native:select
+                    :label="__('app.profile.language')"
+                    :value="$localeValue"
+                    :options="$localeOptions"
+                    @change="setLocaleOption"
+                />
 
                 @if ($languageNotice)
                     <native:text class="text-xs text-theme-on-surface-variant">{{ $languageNotice }}</native:text>
@@ -114,23 +110,13 @@
                     {{ __('app.profile.channel') }}
                 </native:text>
 
-                @foreach ($channels as $key => $meta)
-                    <native:pressable
-                        :native:key="'channel-'.$key"
-                        class="w-full rounded-lg border p-3"
-                        :class="$channel === $key ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
-                        @press="setChannel({{ json_encode($key) }})"
-                    >
-                        <native:column class="w-full gap-0.5">
-                            <native:text class="text-sm font-semibold text-theme-on-surface">
-                                {{ __('app.updates.channels.'.$key) }}
-                            </native:text>
-                            <native:text class="text-xs text-theme-on-surface-variant">
-                                {{ __('app.updates.channels.'.$key.'_description') }}
-                            </native:text>
-                        </native:column>
-                    </native:pressable>
-                @endforeach
+                <native:select
+                    :label="__('app.profile.channel')"
+                    :value="$channelValue"
+                    :options="$channelOptions"
+                    :supporting="$channelDescription"
+                    @change="setChannelOption"
+                />
             </native:column>
 
             <native:column class="w-full gap-1 rounded-lg bg-theme-surface p-4">

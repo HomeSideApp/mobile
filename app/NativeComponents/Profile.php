@@ -37,6 +37,19 @@ final class Profile extends NativeComponent
 
     public ?string $languageNotice = null;
 
+    /** @var list<string> Etiquetas para el select de idioma. */
+    public array $localeOptions = [];
+
+    /** Etiqueta seleccionada (el select compara strings). */
+    public string $localeValue = '';
+
+    /** @var list<string> Etiquetas para el select de canal. */
+    public array $channelOptions = [];
+
+    public string $channelValue = '';
+
+    public string $channelDescription = '';
+
     public bool $twoFactorEnabled = false;
 
     public bool $hasSession = false;
@@ -92,6 +105,63 @@ final class Profile extends NativeComponent
 
         $this->appLocale = $service->current();
         $this->locales = $service->options();
+        $this->localeOptions = array_column($this->locales, 'label');
+        $this->localeValue = $this->localeLabels()[$this->appLocale] ?? '';
+    }
+
+    /**
+     * Etiqueta => código. Las etiquetas son nombres fijos (Español, English),
+     * no traducciones, así que el mapeo es estable.
+     *
+     * @return array<string, string>
+     */
+    private function localeLabels(): array
+    {
+        return array_column($this->locales, 'label', 'code');
+    }
+
+    /**
+     * El select devuelve la etiqueta elegida; acá se vuelve al código.
+     */
+    public function setLocaleOption(?string $label = null): void
+    {
+        $label = $label ?? $this->localeValue;
+        $code = array_search($label, $this->localeLabels(), true);
+
+        if (is_string($code)) {
+            $this->setLocale($code);
+        }
+    }
+
+    private function refreshChannelOptions(): void
+    {
+        $checker = new AppUpdateChecker;
+
+        $this->channels = $checker->channels();
+        $this->channel = $checker->channel();
+        $this->channelOptions = array_values(array_map(
+            static fn (string $key): string => (string) __('app.updates.channels.'.$key),
+            array_keys($this->channels),
+        ));
+        $this->channelValue = (string) __('app.updates.channels.'.$this->channel);
+        $this->channelDescription = (string) __('app.updates.channels.'.$this->channel.'_description');
+    }
+
+    /**
+     * El select devuelve la etiqueta traducida del canal; se mapea de vuelta
+     * contra las mismas traducciones con las que se armó la lista.
+     */
+    public function setChannelOption(?string $label = null): void
+    {
+        $label = $label ?? $this->channelValue;
+
+        foreach (array_keys($this->channels) as $key) {
+            if ((string) __('app.updates.channels.'.$key) === $label) {
+                $this->setChannel($key);
+
+                return;
+            }
+        }
     }
 
     public function navTitle(): string
@@ -117,6 +187,8 @@ final class Profile extends NativeComponent
         $this->appLocale = $locale;
         $this->locale = $locale;
         $this->languageNotice = null;
+        $this->refreshLocales();
+        $this->refreshChannelOptions();
 
         if (! $this->hasSession) {
             return;
@@ -163,6 +235,7 @@ final class Profile extends NativeComponent
         }
 
         $this->channel = $checker->channel();
+        $this->refreshChannelOptions();
         $this->applyUpdate($checker->status());
     }
 
@@ -361,6 +434,7 @@ final class Profile extends NativeComponent
         $checker = new AppUpdateChecker;
         $this->channels = $checker->channels();
         $this->channel = $checker->channel();
+        $this->refreshChannelOptions();
         $this->applyUpdate($checker->status());
 
         $cached = $session->user();

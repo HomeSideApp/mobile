@@ -93,6 +93,28 @@ class ProfileScreenTest extends TestCase
         $this->assertStringContainsString('stable.apk', (string) $component->get('update.apk_url'));
     }
 
+    public function test_the_channel_is_a_native_select_and_changing_it_rechecks(): void
+    {
+        config(['nativephp.version_code' => 10]);
+
+        Http::fake([
+            '*/download/dev-latest/latest.json' => Http::response([
+                'channel' => 'dev', 'version' => '0.1.50-dev', 'version_code' => 50,
+            ]),
+            '*/releases/latest/download/latest.json' => Http::response([
+                'channel' => 'stable', 'version' => '0.2.0', 'version_code' => 30,
+            ]),
+        ]);
+
+        Native::test(Profile::class, platform: 'android')
+            ->assertSet('channelOptions', ['Desarrollo', 'Estable'])
+            ->assertSet('channelValue', 'Desarrollo')
+            ->call('setChannelOption', 'Estable')
+            ->assertSet('channel', 'stable')
+            ->assertSet('channelValue', 'Estable')
+            ->assertSet('channelDescription', 'Solo versiones tageadas.');
+    }
+
     public function test_a_manual_check_reports_when_the_channel_has_no_releases(): void
     {
         Http::fake(['*' => Http::response('Not Found', 404)]);

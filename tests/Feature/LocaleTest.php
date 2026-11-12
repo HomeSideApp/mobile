@@ -93,15 +93,35 @@ class LocaleTest extends TestCase
             && $request['email'] === 'ana@example.com');
     }
 
-    public function test_the_profile_renders_both_language_options(): void
+    public function test_the_profile_offers_a_native_select_with_both_languages(): void
     {
         config(['nativephp.version_code' => 50]);
         Http::fake(['*/releases/*/latest.json' => Http::response('', 404)]);
 
         Native::test(Profile::class, platform: 'android')
             ->assertSet('appLocale', 'es-ES')
-            ->assertSee('Español')
-            ->assertSee('English');
+            ->assertSet('localeOptions', ['Español', 'English'])
+            ->assertSet('localeValue', 'Español')
+            ->assertElement('select');
+    }
+
+    public function test_choosing_a_language_from_the_select_switches_it(): void
+    {
+        $this->connect();
+        config(['nativephp.version_code' => 50]);
+
+        Http::fake([
+            '*/releases/*/latest.json' => Http::response('', 404),
+            '*/api/v1/me' => Http::response(['data' => $this->me(['locale' => 'es-ES'])]),
+            '*/api/v1/me/profile' => Http::response(['data' => $this->me(['locale' => 'en-US'])]),
+        ]);
+
+        Native::test(Profile::class, platform: 'android')
+            ->call('setLocaleOption', 'English')
+            ->assertSet('appLocale', 'en-US')
+            ->assertSet('localeValue', 'English')
+            // Las etiquetas del otro select también cambiaron de idioma.
+            ->assertSet('channelOptions', ['Development', 'Stable']);
     }
 
     public function test_without_a_session_the_language_changes_only_on_the_device(): void
