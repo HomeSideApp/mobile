@@ -381,6 +381,50 @@ class ListDetailTest extends TestCase
         $this->assertNotNull($component->get('itemError'));
     }
 
+    public function test_a_failed_upload_recovers_the_image_from_the_server(): void
+    {
+        $this->connect();
+
+        $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
+        file_put_contents($path, "\xFF\xD8\xFF".str_repeat('a', 32));
+
+        // El ítem ya tenía una foto en el servidor y la subida va a fallar.
+        $withImage = $this->listPayload();
+        $withImage['data']['items'][0]['image_url'] = 'https://homeside.cloud/api/v1/lists/list-1/items/item-1/image';
+
+        Http::fake([
+            '*/api/v1/lists/list-1/items/item-1/image' => Http::response("\xFF\xD8\xFF".str_repeat('b', 32)),
+            '*/api/v1/lists/list-1/items/item-1' => Http::response(['message' => 'Server error'], 500),
+            '*/api/v1/lists/list-1' => Http::response($withImage),
+            '*/api/v1/categories*' => Http::response(['data' => []]),
+            '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
+        ]);
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->emitNative(MediaSelected::class, [
+                'success' => true,
+                'count' => 1,
+                'files' => [['path' => $path, 'mimeType' => 'image/jpeg', 'extension' => 'jpg', 'type' => 'image']],
+            ])
+            ->assertSet('uploadState', 'failed');
+
+        // La foto mostrada es la del servidor, no el archivo rechazado.
+        $draft = (string) $component->get('draftImageUrl');
+        $this->assertStringStartsWith('file://', $draft);
+        $this->assertStringNotContainsString($path, $draft);
+
+        // Se volvió a pedir la imagen: una al abrir, otra al recuperar.
+        $images = collect(Http::recorded())
+            ->filter(fn (array $pair): bool => str_ends_with($pair[0]->url(), '/items/item-1/image'))
+            ->count();
+
+        $this->assertSame(2, $images);
+
+        @unlink($path);
+    }
+
     public function test_a_cancelled_pick_uploads_nothing(): void
     {
         $this->connect();

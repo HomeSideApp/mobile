@@ -581,14 +581,32 @@ final class ListDetail extends NativeComponent
     }
 
     /**
-     * Vuelve a la foto anterior cuando la subida falla: el preview no puede
-     * quedarse mostrando un archivo que el servidor no aceptó.
+     * Vuelve a la foto que tiene el servidor cuando la subida falla.
+     *
+     * El servidor es la verdad: puede que haya guardado la foto igual (un 500
+     * de la respuesta no prueba lo contrario) o que la foto sea otra. Así que se
+     * descarta el cache local, se vuelve a pedir la lista y se muestra lo que
+     * haya. Si esa petición también falla, queda la última foto que veíamos.
      */
     private function rollbackImage(): void
     {
         $this->uploadState = 'failed';
-        $this->draftImageUrl = $this->previousImageUrl;
-        $this->previousImageUrl = null;
+
+        if ($this->listId === null || $this->openItemId === null) {
+            $this->draftImageUrl = $this->previousImageUrl;
+
+            return;
+        }
+
+        (new ItemImageCache)->forget($this->listId, $this->openItemId);
+
+        $this->load();
+
+        $fresh = collect($this->pending)->firstWhere('id', $this->openItemId);
+
+        $this->draftImageUrl = is_array($fresh) && is_string($fresh['image_url'] ?? null)
+            ? $fresh['image_url']
+            : $this->previousImageUrl;
     }
 
     public function selectIcon(string $name): void
