@@ -218,6 +218,35 @@ class ListDetailTest extends TestCase
             ->assertSet('name', 'Súper');
     }
 
+    public function test_the_photo_button_says_so_when_the_picker_is_unavailable(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        // Sin el plugin de cámara, `Camera.PickMedia` no tiene implementación
+        // nativa y `start()` devuelve false: la app tiene que explicarlo, no
+        // quedarse muda.
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->call('pickPhoto')
+            ->assertSet('itemError', 'No pudimos abrir la galería del dispositivo.');
+    }
+
+    public function test_the_photo_button_opens_the_picker_when_it_is_available(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        Native::fakeBridge()->respondTo('Camera.PickMedia', ['status' => 'success']);
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->call('pickPhoto')
+            ->assertSet('itemError', null);
+
+        Native::fakeBridge()->assertCalled('Camera.PickMedia');
+    }
+
     public function test_the_household_route_uses_the_household_prefix(): void
     {
         $this->connect();

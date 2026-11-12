@@ -112,6 +112,7 @@ return [
         'categories' => 'Categories',
         'pending_hint' => 'Tap to check · hold to edit',
         'upload_photo' => 'Upload photo',
+        'photo_unavailable' => 'We could not open the device gallery.',
         'photo_failed' => 'We could not read the chosen photo.',
         'uploading' => 'Uploading photo…',
         'photo_uploaded' => 'Photo updated.',

@@ -598,7 +598,17 @@ final class ListDetail extends NativeComponent
             return;
         }
 
-        Camera::pickImages('image', false, 1)->start();
+        $this->itemError = null;
+        $this->itemNotice = null;
+
+        // Quien registra `Camera.PickMedia` es el plugin nativephp/mobile-camera.
+        // Sin él `start()` devuelve false y, sin este chequeo, el botón no hacía
+        // absolutamente nada: ni permiso, ni galería, ni error.
+        $started = Camera::pickImages('image', false, 1)->start();
+
+        if (! $started) {
+            $this->itemError = __('app.list_detail.photo_unavailable');
+        }
     }
 
     #[On(MediaSelected::class)]

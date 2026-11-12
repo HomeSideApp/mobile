@@ -112,6 +112,7 @@ return [
         'categories' => 'Categorías',
         'pending_hint' => 'Tocá para tildar · mantené para editar',
         'upload_photo' => 'Subir foto',
+        'photo_unavailable' => 'No pudimos abrir la galería del dispositivo.',
         'photo_failed' => 'No pudimos leer la foto elegida.',
         'uploading' => 'Subiendo foto…',
         'photo_uploaded' => 'Foto actualizada.',
