@@ -53,16 +53,12 @@ return [
     'updates' => [
         'channels' => [
             'dev' => [
-                'label' => 'Desarrollo',
-                'description' => 'Cada build de la rama develop.',
                 'manifest' => env(
                     'HOMESIDE_UPDATE_MANIFEST_DEV',
                     'https://github.com/HomeSideApp/mobile/releases/download/dev-latest/latest.json',
                 ),
             ],
             'stable' => [
-                'label' => 'Estable',
-                'description' => 'Solo versiones tageadas.',
                 'manifest' => env(
                     'HOMESIDE_UPDATE_MANIFEST_STABLE',
                     'https://github.com/HomeSideApp/mobile/releases/latest/download/latest.json',

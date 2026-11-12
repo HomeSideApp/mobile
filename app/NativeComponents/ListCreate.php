@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\ListsService;
+use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -27,6 +28,8 @@ final class ListCreate extends NativeComponent
 
     public function mount(): void
     {
+        (new LocaleService)->apply();
+
         try {
             $me = (new AuthService)->me();
             $this->householdId = is_string($me['active_household_id'] ?? null)
@@ -52,7 +55,7 @@ final class ListCreate extends NativeComponent
 
     public function navTitle(): string
     {
-        return 'Nueva lista';
+        return __('app.list_create.title');
     }
 
     public function chooseScope(string $scope): void
@@ -74,7 +77,7 @@ final class ListCreate extends NativeComponent
         $this->error = null;
 
         if (trim($this->name) === '') {
-            $this->error = 'Poné un nombre para la lista.';
+            $this->error = __('app.list_create.name_required');
 
             return;
         }

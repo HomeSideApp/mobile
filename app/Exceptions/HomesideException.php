@@ -50,33 +50,26 @@ final class HomesideException extends RuntimeException
         return new self(
             self::NETWORK,
             $detail !== ''
-                ? 'No pudimos conectar con el servidor. '.$detail
-                : 'No pudimos conectar con el servidor. Revisá tu conexión y la dirección.',
+                ? __('app.errors.network').' '.$detail
+                : __('app.errors.network'),
         );
     }
 
     public static function notConfigured(): self
     {
-        return new self(
-            self::NOT_CONFIGURED,
-            'Todavía no elegiste un servidor de HomeSide.',
-        );
+        return new self(self::NOT_CONFIGURED, __('app.errors.not_configured'));
     }
 
     public static function unauthorized(): self
     {
-        return new self(
-            self::UNAUTHORIZED,
-            'Tu sesión venció. Volvé a iniciar sesión.',
-            401,
-        );
+        return new self(self::UNAUTHORIZED, __('app.errors.unauthorized'), 401);
     }
 
     public static function forbidden(?string $serverCode = null, string $message = ''): self
     {
         return new self(
             self::FORBIDDEN,
-            $message !== '' ? $message : 'Tu cuenta no tiene permiso para hacer esto.',
+            $message !== '' ? $message : __('app.errors.forbidden'),
             403,
             serverCode: $serverCode,
         );
@@ -84,12 +77,7 @@ final class HomesideException extends RuntimeException
 
     public static function conflict(?string $serverCode = null): self
     {
-        return new self(
-            self::CONFLICT,
-            'Ese recurso ya cambió. Actualizá y volvé a intentar.',
-            409,
-            serverCode: $serverCode,
-        );
+        return new self(self::CONFLICT, __('app.errors.conflict'), 409, serverCode: $serverCode);
     }
 
     /**
@@ -99,7 +87,7 @@ final class HomesideException extends RuntimeException
     {
         return new self(
             self::VALIDATION,
-            $message !== '' ? $message : 'Revisá los datos ingresados.',
+            $message !== '' ? $message : __('app.errors.validation'),
             422,
             $errors,
         );
@@ -110,8 +98,8 @@ final class HomesideException extends RuntimeException
         return new self(
             self::RATE_LIMITED,
             $retryAfter !== null
-                ? sprintf('Demasiados intentos. Esperá %d segundos.', $retryAfter)
-                : 'Demasiados intentos. Esperá un momento.',
+                ? __('app.errors.rate_limited_wait', ['seconds' => $retryAfter])
+                : __('app.errors.rate_limited'),
             429,
             retryAfter: $retryAfter,
         );
@@ -119,18 +107,14 @@ final class HomesideException extends RuntimeException
 
     public static function server(int $status): self
     {
-        return new self(
-            self::SERVER,
-            'El servidor de HomeSide está teniendo un problema. Probá de nuevo en unos minutos.',
-            $status,
-        );
+        return new self(self::SERVER, __('app.errors.server'), $status);
     }
 
     public static function unexpected(int $status, string $message = ''): self
     {
         return new self(
             self::UNEXPECTED,
-            $message !== '' ? $message : 'Ocurrió un error inesperado.',
+            $message !== '' ? $message : __('app.errors.unexpected'),
             $status,
         );
     }

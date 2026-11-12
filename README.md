@@ -79,6 +79,30 @@ cliente HTTP, no el aspecto.
 
 iOS se compila **solo en macOS** (Xcode 26+).
 
+## Idioma
+
+Dos locales, los mismos del backend (`AppLocale`): **es-ES** y **en-US**. Los
+textos de la app viven en `lang/{locale}/app.php`; nada de copy hardcodeada en
+las pantallas.
+
+Hay dos fuentes de verdad y `LocaleService` las concilia:
+
+| Fuente | Alcance |
+|---|---|
+| **El dispositivo** (`settings`) | Recuerda la elección sin sesión: la pantalla de conexión y el login ya salen en el idioma correcto |
+| **La cuenta** (`user.locale`, vía `/me`) | Manda cuando hay sesión, porque **el backend traduce el catálogo** (categorías y productos) con ese valor |
+
+Cambiar el idioma en **Perfil** lo aplica al instante, lo guarda en el
+dispositivo y, si hay sesión, hace `PATCH /me/profile` con `name`, `email` y
+`locale` (el endpoint exige el perfil completo). Si ese PATCH falla, la app se
+queda con el idioma local y avisa: no se pierde la elección.
+
+Por defecto se usa `APP_LOCALE` (`es-ES`), con `en-US` como fallback.
+
+```bash
+php artisan test --filter=LocaleTest   # 9 casos
+```
+
 ## Memoria y zona horaria
 
 - **Zona horaria**: el Makefile detecta la del host y la inyecta como `TZ`. El

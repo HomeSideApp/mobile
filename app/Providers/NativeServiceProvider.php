@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Homeside\ApkUpdater\ApkUpdaterServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\UI\NativeUIServiceProvider;
 
@@ -36,8 +37,7 @@ class NativeServiceProvider extends ServiceProvider
     {
         return [
             NativeUIServiceProvider::class,
-            \Homeside\ApkUpdater\ApkUpdaterServiceProvider::class,
-        
+            ApkUpdaterServiceProvider::class,
 
         ];
     }

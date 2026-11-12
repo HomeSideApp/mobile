@@ -6,19 +6,15 @@
                 <native:image src="logo-mark.png" :width="72" :height="72" fit="contain" alt="HomeSide" />
                 <native:text class="text-2xl font-bold text-theme-on-background">HomeSide</native:text>
                 <native:text class="text-center text-sm text-theme-on-surface-variant">
-                    @if ($step === 'credentials')
-                        Entrá con tu cuenta. Después te pedimos el código de tu app de autenticación.
-                    @else
-                        Escribí el código de 6 dígitos de tu app de autenticación.
-                    @endif
+                    {{ $step === 'credentials' ? __('app.login.tagline_credentials') : __('app.login.tagline_otp') }}
                 </native:text>
             </native:column>
 
             @if ($step === 'credentials')
 
                 <native:outlined-text-input
-                    label="Email"
-                    placeholder="vos@ejemplo.com"
+                    :label="__('app.login.email')"
+                    :placeholder="__('app.login.email_placeholder')"
                     keyboard="email"
                     autocomplete="email"
                     native:model.debounce.300ms="email"
@@ -26,7 +22,7 @@
                 />
 
                 <native:outlined-text-input
-                    label="Contraseña"
+                    :label="__('app.login.password')"
                     secure
                     revealable
                     native:model.debounce.300ms="password"
@@ -34,7 +30,7 @@
                 />
 
                 <native:button
-                    label="Continuar"
+                    :label="__('app.login.continue')"
                     class="w-full"
                     :loading="$busy"
                     :disabled="$busy"
@@ -50,7 +46,7 @@
                 @endif
 
                 <native:outlined-text-input
-                    label="Código"
+                    :label="__('app.login.code')"
                     placeholder="123456"
                     keyboard="number"
                     max-length="6"
@@ -60,7 +56,7 @@
                 />
 
                 <native:button
-                    label="Entrar"
+                    :label="__('app.login.submit')"
                     class="w-full"
                     :loading="$busy"
                     :disabled="$busy"
@@ -69,11 +65,11 @@
 
                 <native:row class="w-full items-center justify-between">
                     <native:pressable @press="resend">
-                        <native:text class="text-sm font-semibold text-theme-primary">Reenviar código</native:text>
+                        <native:text class="text-sm font-semibold text-theme-primary">{{ __('app.login.resend') }}</native:text>
                     </native:pressable>
 
                     <native:pressable @press="backToCredentials">
-                        <native:text class="text-sm text-theme-on-surface-variant">Usar otra cuenta</native:text>
+                        <native:text class="text-sm text-theme-on-surface-variant">{{ __('app.login.other_account') }}</native:text>
                     </native:pressable>
                 </native:row>
 
@@ -87,7 +83,7 @@
 
             <native:pressable class="w-full items-center pt-2" @press="changeServer">
                 <native:text class="text-xs text-theme-on-surface-variant">
-                    Cambiar servidor
+                    {{ __('app.common.change_server') }}
                 </native:text>
             </native:pressable>
 

@@ -3,7 +3,7 @@
         <native:column class="w-full gap-4 p-4">
 
             <native:outlined-text-input
-                placeholder="Buscar producto"
+                :placeholder="__('app.picker.search')"
                 leading-icon="search"
                 autofocus
                 native:model.debounce.400ms="query"
@@ -29,13 +29,13 @@
             @if ($loading)
                 <native:row class="w-full items-center justify-center gap-2 py-4">
                     <native:activity-indicator />
-                    <native:text class="text-sm text-theme-on-surface-variant">Buscando…</native:text>
+                    <native:text class="text-sm text-theme-on-surface-variant">{{ __('app.picker.searching') }}</native:text>
                 </native:row>
             @endif
 
             @if (count($results) > 0)
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Resultados
+                    {{ __('app.picker.results') }}
                 </native:text>
 
                 @foreach (array_chunk($results, 2) as $row)
@@ -74,10 +74,10 @@
             @if (! $loading && count($results) === 0 && trim($query) !== '')
                 <native:column class="w-full gap-3 rounded-lg bg-theme-surface-variant p-4">
                     <native:text class="text-sm text-theme-on-surface-variant">
-                        No encontramos «{{ $query }}» en el catálogo.
+                        {{ __('app.picker.empty', ['query' => $query]) }}
                     </native:text>
                     <native:button
-                        :label="'Crear «'.trim($query).'» y agregarlo'"
+                        :label="__('app.picker.create_and_add', ['query' => trim($query)])"
                         class="w-full"
                         @press="createAndAdd"
                     />
@@ -86,7 +86,7 @@
 
             @if (trim($query) === '' && count($recent) > 0)
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Usados hace poco
+                    {{ __('app.picker.recent') }}
                 </native:text>
 
                 @foreach (array_chunk($recent, 2) as $row)

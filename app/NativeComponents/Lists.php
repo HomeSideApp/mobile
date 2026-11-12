@@ -7,6 +7,7 @@ use App\Services\Homeside\AppUpdateChecker;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
+use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -48,6 +49,8 @@ final class Lists extends NativeComponent
 
     public function mount(): void
     {
+        (new LocaleService)->apply();
+
         $this->load();
     }
 
@@ -63,7 +66,7 @@ final class Lists extends NativeComponent
 
     public function navTitle(): string
     {
-        return 'Listas';
+        return __('app.lists.title');
     }
 
     public function onSearch(?string $value = null): void

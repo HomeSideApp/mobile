@@ -44,11 +44,11 @@ final class AppUpdateChecker
     ) {}
 
     /**
-     * @return array<string, array{label: string, description: string}>
+     * @return array<string, array{manifest: string}>
      */
     public function channels(): array
     {
-        /** @var array<string, array{label: string, description: string}> $channels */
+        /** @var array<string, array{manifest: string}> $channels */
         $channels = config('homeside.updates.channels', []);
 
         return $channels;
@@ -70,7 +70,9 @@ final class AppUpdateChecker
 
     public function channelLabel(): string
     {
-        return $this->channels()[$this->channel()]['label'] ?? $this->channel();
+        $channel = $this->channel();
+
+        return (string) __('app.updates.channels.'.$channel);
     }
 
     public function setChannel(string $channel): bool
@@ -206,7 +208,7 @@ final class AppUpdateChecker
         $url = $this->channels()[$channel]['manifest'] ?? null;
 
         if (! is_string($url) || $url === '') {
-            return $this->unavailable($channel, 'Este canal no tiene una URL de actualizaciones configurada.');
+            return $this->unavailable($channel, __('app.updates.no_url'));
         }
 
         try {
@@ -214,21 +216,21 @@ final class AppUpdateChecker
                 ->acceptJson()
                 ->get($url);
         } catch (ConnectionException) {
-            return $this->unavailable($channel, 'No pudimos consultar si hay actualizaciones.');
+            return $this->unavailable($channel, __('app.updates.check_failed'));
         }
 
         if ($response->status() === 404) {
-            return $this->unavailable($channel, 'Todavía no hay versiones publicadas en este canal.');
+            return $this->unavailable($channel, __('app.updates.none_in_channel'));
         }
 
         if (! $response->successful()) {
-            return $this->unavailable($channel, 'El servidor de actualizaciones no respondió bien.');
+            return $this->unavailable($channel, __('app.updates.server_error'));
         }
 
         $manifest = $response->json();
 
         if (! is_array($manifest) || ! is_numeric($manifest['version_code'] ?? null)) {
-            return $this->unavailable($channel, 'El manifiesto de actualizaciones no es válido.');
+            return $this->unavailable($channel, __('app.updates.invalid_manifest'));
         }
 
         $latestCode = (int) $manifest['version_code'];
@@ -237,10 +239,10 @@ final class AppUpdateChecker
 
         if ($currentCode < $minimumCode) {
             $state = self::STATE_REQUIRED;
-            $message = 'Esta versión de HomeSide ya no es compatible. Actualizá para seguir usando la app.';
+            $message = __('app.updates.required');
         } elseif ($latestCode > $currentCode) {
             $state = self::STATE_OPTIONAL;
-            $message = 'Hay una versión nueva disponible.';
+            $message = __('app.updates.available');
         } else {
             $state = self::STATE_UP_TO_DATE;
             $message = null;

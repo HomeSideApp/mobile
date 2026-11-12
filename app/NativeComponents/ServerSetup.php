@@ -6,6 +6,7 @@ use App\Exceptions\HomesideException;
 use App\Exceptions\InvalidServerUrl;
 use App\Services\Homeside\HomesideClient;
 use App\Services\Homeside\Session;
+use App\Services\Settings\LocaleService;
 use App\Services\Settings\SettingsRepository;
 use App\Support\ServerUrl;
 use Illuminate\View\View;
@@ -32,6 +33,8 @@ final class ServerSetup extends NativeComponent
 
     public function mount(): void
     {
+        (new LocaleService)->apply();
+
         $settings = new SettingsRepository;
         $saved = $settings->server();
 
@@ -41,7 +44,7 @@ final class ServerSetup extends NativeComponent
 
     public function navTitle(): string
     {
-        return 'Conectar';
+        return __('app.server_setup.title');
     }
 
     /**
@@ -91,7 +94,7 @@ final class ServerSetup extends NativeComponent
         $isHealthy = ($health['status'] ?? null) === 'ok';
 
         if (! $isHealthy) {
-            $this->fail('El servidor respondió, pero no parece un HomeSide.');
+            $this->fail(__('app.server_setup.not_homeside'));
 
             return;
         }

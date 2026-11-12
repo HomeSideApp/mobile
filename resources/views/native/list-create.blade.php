@@ -3,8 +3,8 @@
         <native:column class="w-full gap-5 p-5">
 
             <native:outlined-text-input
-                label="Nombre de la lista"
-                placeholder="Compra semanal"
+                :label="__('app.list_create.name')"
+                :placeholder="__('app.list_create.name_placeholder')"
                 autofocus
                 native:model.debounce.300ms="name"
                 @submit="save"
@@ -12,7 +12,7 @@
 
             <native:column class="w-full gap-2">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    ¿Para quién es?
+                    {{ __('app.list_create.scope') }}
                 </native:text>
 
                 <native:pressable
@@ -21,9 +21,9 @@
                     @press="chooseScope({{ json_encode("personal") }})"
                 >
                     <native:column class="w-full gap-1">
-                        <native:text class="text-base font-semibold text-theme-on-surface">Solo para mí</native:text>
+                        <native:text class="text-base font-semibold text-theme-on-surface">{{ __('app.list_create.personal') }}</native:text>
                         <native:text class="text-xs text-theme-on-surface-variant">
-                            Lista privada, no la ve nadie más.
+                            {{ __('app.list_create.personal_hint') }}
                         </native:text>
                     </native:column>
                 </native:pressable>
@@ -37,7 +37,7 @@
                         <native:column class="w-full gap-1">
                             <native:text class="text-base font-semibold text-theme-on-surface">{{ $householdName }}</native:text>
                             <native:text class="text-xs text-theme-on-surface-variant">
-                                Compartida con todo el hogar.
+                                {{ __('app.list_create.household_hint') }}
                             </native:text>
                         </native:column>
                     </native:pressable>
@@ -51,7 +51,7 @@
             @endif
 
             <native:button
-                label="Crear lista"
+                :label="__('app.list_create.submit')"
                 class="w-full"
                 :loading="$busy"
                 :disabled="$busy"

@@ -4,6 +4,7 @@ namespace App\NativeComponents;
 
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\ListsService;
+use App\Services\Settings\LocaleService;
 use App\Support\CardColor;
 use App\Support\ProductIcon;
 use Illuminate\View\View;
@@ -52,6 +53,8 @@ final class ListDetail extends NativeComponent
 
     public function mount(): void
     {
+        (new LocaleService)->apply();
+
         $this->listId = $this->param('list');
         $this->householdId = $this->param('household');
 
@@ -70,7 +73,7 @@ final class ListDetail extends NativeComponent
 
     public function navTitle(): string
     {
-        return $this->name !== '' ? $this->name : 'Lista';
+        return $this->name !== '' ? $this->name : __('app.list_detail.title');
     }
 
     public function addItems(): void
@@ -212,7 +215,7 @@ final class ListDetail extends NativeComponent
     {
         if ($this->listId === null || $this->listId === '') {
             $this->loading = false;
-            $this->error = 'No encontramos la lista.';
+            $this->error = __('app.list_detail.not_found');
 
             return;
         }

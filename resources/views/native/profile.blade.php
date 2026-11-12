@@ -4,42 +4,63 @@
 
             <native:column class="w-full gap-1 rounded-lg bg-theme-surface p-4">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Cuenta
+                    {{ __('app.profile.account') }}
                 </native:text>
                 <native:text class="text-base font-semibold text-theme-on-surface">
-                    {{ $userName ?? ($hasSession ? 'Sesión activa' : 'Sin iniciar sesión') }}
+                    {{ $userName ?? ($hasSession ? __('app.profile.session_active') : __('app.profile.no_session')) }}
                 </native:text>
                 @if ($userEmail)
                     <native:text class="text-sm text-theme-on-surface-variant">{{ $userEmail }}</native:text>
                 @endif
-                @if ($locale)
-                    <native:text class="text-xs text-theme-on-surface-variant">Idioma: {{ $locale }}</native:text>
+            </native:column>
+
+            {{-- ── Idioma ─────────────────────────────────────────────── --}}
+            <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
+                <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                    {{ __('app.profile.language') }}
+                </native:text>
+
+                @foreach ($locales as $option)
+                    <native:pressable
+                        :native:key="'locale-'.$option['code']"
+                        class="w-full rounded-lg border p-3"
+                        :class="$appLocale === $option['code'] ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
+                        @press="setLocale({{ json_encode($option['code']) }})"
+                    >
+                        <native:text class="text-sm font-semibold text-theme-on-surface">{{ $option['label'] }}</native:text>
+                    </native:pressable>
+                @endforeach
+
+                @if ($languageNotice)
+                    <native:text class="text-xs text-theme-on-surface-variant">{{ $languageNotice }}</native:text>
                 @endif
             </native:column>
 
             <native:column class="w-full gap-1 rounded-lg bg-theme-surface p-4">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Servidor
+                    {{ __('app.profile.server') }}
                 </native:text>
-                <native:text class="text-sm text-theme-on-surface">{{ $server ?? 'Sin configurar' }}</native:text>
+                <native:text class="text-sm text-theme-on-surface">{{ $server ?? __('app.profile.not_configured') }}</native:text>
             </native:column>
 
             {{-- ── Actualizaciones ─────────────────────────────────────── --}}
             <native:column class="w-full gap-3 rounded-lg bg-theme-surface p-4">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Versión
+                    {{ __('app.profile.version') }}
                 </native:text>
 
                 <native:row class="w-full items-center gap-2">
-                    <native:text class="text-sm text-theme-on-surface">HomeSide {{ $update['current_version'] ?? '—' }}</native:text>
+                    <native:text class="text-sm text-theme-on-surface">{{ __('app.common.app_name') }} {{ $update['current_version'] ?? '—' }}</native:text>
                     <native:spacer />
-                    <native:text class="text-xs text-theme-on-surface-variant">Canal {{ $update['channel_label'] ?? '' }}</native:text>
+                    <native:text class="text-xs text-theme-on-surface-variant">{{ $update['channel_label'] ?? '' }}</native:text>
                 </native:row>
 
                 @if ($updateAvailable)
                     <native:column class="w-full gap-1 rounded-lg bg-theme-accent p-3">
                         <native:text class="text-sm font-semibold text-theme-on-accent">
-                            Hay una versión nueva{{ is_string($update['latest_version'] ?? null) ? ': '.$update['latest_version'] : '' }}
+                            {{ is_string($update['latest_version'] ?? null)
+                                ? __('app.updates.available_version', ['version' => $update['latest_version']])
+                                : __('app.updates.available') }}
                         </native:text>
                         @if (is_string($update['notes'] ?? null))
                             <native:text class="text-xs text-theme-on-accent">{{ $update['notes'] }}</native:text>
@@ -50,13 +71,15 @@
                         <native:row class="w-full items-center gap-2">
                             <native:activity-indicator />
                             <native:text class="flex-1 text-sm text-theme-on-surface">
-                                Descargando… {{ $downloadProgress }}%
+                                {{ __('app.updates.downloading', ['progress' => $downloadProgress]) }}
                             </native:text>
                         </native:row>
                     @endif
 
                     <native:button
-                        :label="$downloadStatus === 'failed' ? 'Reintentar descarga' : ($downloadStatus === 'successful' ? 'Instalar' : 'Descargar actualización')"
+                        :label="$downloadStatus === 'failed'
+                            ? __('app.updates.retry')
+                            : ($downloadStatus === 'successful' ? __('app.updates.install') : __('app.updates.download'))"
                         class="w-full"
                         :disabled="$downloadStatus === 'running'"
                         @press="downloadUpdate"
@@ -66,13 +89,13 @@
                         <native:text class="text-xs text-theme-on-surface-variant">{{ $downloadMessage }}</native:text>
                     @endif
                 @elseif (($update['state'] ?? '') === 'up_to_date')
-                    <native:text class="text-sm text-theme-success">Estás al día.</native:text>
+                    <native:text class="text-sm text-theme-success">{{ __('app.profile.up_to_date') }}</native:text>
                 @elseif (($update['state'] ?? '') === 'unavailable')
                     <native:text class="text-xs text-theme-on-surface-variant">{{ $update['message'] ?? '' }}</native:text>
                 @endif
 
                 <native:button
-                    label="Buscar actualizaciones"
+                    :label="__('app.profile.check')"
                     variant="secondary"
                     class="w-full"
                     :loading="$checkingUpdate"
@@ -81,14 +104,14 @@
                 />
 
                 <native:text class="text-xs text-theme-on-surface-variant">
-                    Android va a pedir permiso para instalar la actualización la primera vez.
+                    {{ __('app.updates.hint') }}
                 </native:text>
             </native:column>
 
             {{-- ── Canal ──────────────────────────────────────────────── --}}
             <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Canal de actualizaciones
+                    {{ __('app.profile.channel') }}
                 </native:text>
 
                 @foreach ($channels as $key => $meta)
@@ -99,8 +122,12 @@
                         @press="setChannel({{ json_encode($key) }})"
                     >
                         <native:column class="w-full gap-0.5">
-                            <native:text class="text-sm font-semibold text-theme-on-surface">{{ $meta['label'] }}</native:text>
-                            <native:text class="text-xs text-theme-on-surface-variant">{{ $meta['description'] }}</native:text>
+                            <native:text class="text-sm font-semibold text-theme-on-surface">
+                                {{ __('app.updates.channels.'.$key) }}
+                            </native:text>
+                            <native:text class="text-xs text-theme-on-surface-variant">
+                                {{ __('app.updates.channels.'.$key.'_description') }}
+                            </native:text>
                         </native:column>
                     </native:pressable>
                 @endforeach
@@ -108,18 +135,18 @@
 
             <native:column class="w-full gap-1 rounded-lg bg-theme-surface p-4">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                    Seguridad
+                    {{ __('app.profile.security') }}
                 </native:text>
                 <native:text class="text-sm text-theme-on-surface">
-                    Verificación en dos pasos: {{ $twoFactorEnabled ? 'activa' : 'sin configurar' }}
+                    {{ __('app.profile.two_factor', ['state' => $twoFactorEnabled ? __('app.profile.two_factor_on') : __('app.profile.two_factor_off')]) }}
                 </native:text>
                 <native:text class="text-xs text-theme-on-surface-variant">
-                    La contraseña y los códigos de recuperación se gestionan desde la web de tu servidor.
+                    {{ __('app.profile.security_hint') }}
                 </native:text>
             </native:column>
 
             <native:button
-                label="Cambiar servidor"
+                :label="__('app.profile.change_server')"
                 variant="secondary"
                 class="w-full"
                 @press="changeServer"
@@ -127,14 +154,14 @@
 
             @if ($hasSession)
                 <native:button
-                    label="Cerrar sesión"
+                    :label="__('app.profile.logout')"
                     variant="destructive"
                     class="w-full"
                     :loading="$busy"
                     @press="logout"
                 />
             @else
-                <native:button label="Iniciar sesión" class="w-full" @press="goToLogin" />
+                <native:button :label="__('app.profile.login')" class="w-full" @press="goToLogin" />
             @endif
 
             @if ($error)
@@ -144,7 +171,7 @@
             @endif
 
             <native:text class="text-center text-xs text-theme-on-surface-variant">
-                HomeSide {{ config('nativephp.version') }} · la administración se gestiona desde la web
+                {{ __('app.profile.footer', ['version' => config('nativephp.version')]) }}
             </native:text>
 
         </native:column>

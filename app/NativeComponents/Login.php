@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\Session;
+use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -40,6 +41,8 @@ final class Login extends NativeComponent
 
     public function mount(): void
     {
+        (new LocaleService)->apply();
+
         $user = (new Session)->user();
 
         $this->email = is_array($user) && is_string($user['email'] ?? null)
@@ -49,7 +52,7 @@ final class Login extends NativeComponent
 
     public function navTitle(): string
     {
-        return 'Entrar';
+        return __('app.login.title');
     }
 
     public function submitCredentials(?string $submittedPassword = null): void
@@ -66,7 +69,7 @@ final class Login extends NativeComponent
         $this->notice = null;
 
         if (trim($this->email) === '' || $this->password === '') {
-            $this->error = 'Completá tu email y tu contraseña.';
+            $this->error = __('app.login.missing_credentials');
 
             return;
         }
@@ -86,7 +89,7 @@ final class Login extends NativeComponent
         $this->password = '';
         $this->code = '';
         $this->step = self::STEP_OTP;
-        $this->notice = 'Te mandamos el código a tu app de autenticación.';
+        $this->notice = __('app.login.otp_sent');
         $this->busy = false;
     }
 
@@ -106,7 +109,7 @@ final class Login extends NativeComponent
         $this->notice = null;
 
         if (strlen($code) < 6) {
-            $this->error = 'El código tiene 6 dígitos.';
+            $this->error = __('app.login.code_length');
 
             return;
         }
@@ -150,7 +153,7 @@ final class Login extends NativeComponent
         }
 
         $this->resendIn = 30;
-        $this->notice = 'Código reenviado. Tenés 5 minutos para usarlo.';
+        $this->notice = __('app.login.otp_resent');
     }
 
     public function backToCredentials(): void
@@ -174,10 +177,10 @@ final class Login extends NativeComponent
         return match ($exception->reason) {
             HomesideException::FORBIDDEN => $exception->getMessage() !== ''
                 ? $exception->getMessage()
-                : 'Tu cuenta no puede entrar todavía.',
+                : __('app.login.cannot_enter'),
             HomesideException::RATE_LIMITED => $exception->retryAfter !== null
-                ? sprintf('Demasiados intentos. Esperá %d segundos.', $exception->retryAfter)
-                : 'Demasiados intentos. Esperá un momento.',
+                ? __('app.errors.rate_limited_wait', ['seconds' => $exception->retryAfter])
+                : __('app.errors.rate_limited'),
             default => $exception->getMessage(),
         };
     }

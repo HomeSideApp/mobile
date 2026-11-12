@@ -21,27 +21,24 @@ final class InvalidServerUrl extends InvalidArgumentException
 
     public static function empty(): self
     {
-        return new self('empty', 'Escribí la dirección de tu servidor.');
+        return new self('empty', __('app.server_url.empty'));
     }
 
     public static function malformed(): self
     {
-        return new self('malformed', 'Esa dirección no es válida. Ejemplo: https://homeside.cloud');
+        return new self('malformed', __('app.server_url.malformed'));
     }
 
     public static function unsupportedScheme(string $scheme): self
     {
         return new self(
             'unsupported_scheme',
-            sprintf('El esquema "%s" no está soportado. Usá https://', $scheme),
+            __('app.server_url.unsupported_scheme', ['scheme' => $scheme]),
         );
     }
 
     public static function insecure(): self
     {
-        return new self(
-            'insecure',
-            'Por seguridad el servidor debe usar https://. Solo se permite http:// en localhost o en tu red local.',
-        );
+        return new self('insecure', __('app.server_url.insecure'));
     }
 }

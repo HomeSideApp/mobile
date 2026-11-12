@@ -5,23 +5,23 @@
             @if ($needsLogin)
                 <native:column class="w-full items-center gap-3 rounded-lg bg-theme-surface-variant px-4 py-10">
                     <native:icon ios="lock.fill" android="lock" :size="28" class="text-theme-primary" />
-                    <native:text class="text-base font-semibold text-theme-on-surface">Necesitás iniciar sesión</native:text>
-                    <native:button label="Entrar" class="w-full" @press="goToLogin" />
+                    <native:text class="text-base font-semibold text-theme-on-surface">{{ __('app.list_detail.needs_login') }}</native:text>
+                    <native:button :label="__('app.lists.needs_login')" class="w-full" @press="goToLogin" />
                 </native:column>
             @else
 
-                <native:button label="Agregar ítem" icon="plus" class="w-full" @press="addItems" />
+                <native:button :label="__('app.list_detail.add')" icon="plus" class="w-full" @press="addItems" />
 
                 @if ($loading)
                     <native:row class="w-full items-center justify-center gap-2 py-6">
                         <native:activity-indicator />
-                        <native:text class="text-sm text-theme-on-surface-variant">Cargando lista…</native:text>
+                        <native:text class="text-sm text-theme-on-surface-variant">{{ __('app.list_detail.loading') }}</native:text>
                     </native:row>
                 @endif
 
                 @if (! $loading && count($pending) > 0)
                     <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                        Pendientes ({{ count($pending) }})
+                        {{ __('app.list_detail.pending', ['count' => count($pending)]) }}
                     </native:text>
 
                     @foreach (array_chunk($pending, 3) as $row)
@@ -63,16 +63,16 @@
                 @if (! $loading && count($pending) === 0)
                     <native:column class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant px-4 py-8">
                         <native:icon ios="checkmark.circle.fill" android="check_circle" :size="28" class="text-theme-success" />
-                        <native:text class="text-base font-semibold text-theme-on-surface">No queda nada pendiente</native:text>
+                        <native:text class="text-base font-semibold text-theme-on-surface">{{ __('app.list_detail.nothing_pending') }}</native:text>
                         <native:text class="text-center text-sm text-theme-on-surface-variant">
-                            Agregá ítems con el botón de arriba.
+                            {{ __('app.list_detail.nothing_pending_hint') }}
                         </native:text>
                     </native:column>
                 @endif
 
                 @if (count($checked) > 0)
                     <native:text class="mt-2 text-xs font-semibold uppercase text-theme-on-surface-variant">
-                        Comprados ({{ count($checked) }})
+                        {{ __('app.list_detail.checked', ['count' => count($checked)]) }}
                     </native:text>
 
                     @foreach (array_chunk($checked, 3) as $row)
@@ -103,15 +103,15 @@
                 @if ($confirmDelete)
                     <native:column class="mt-4 w-full gap-2 rounded-lg border border-theme-destructive p-4">
                         <native:text class="text-sm font-semibold text-theme-destructive">
-                            ¿Borrar «{{ $name }}» y sus ítems?
+                            {{ __('app.list_detail.delete_confirm', ['name' => $name]) }}
                         </native:text>
                         <native:row class="w-full gap-2">
-                            <native:button label="Cancelar" variant="secondary" class="flex-1" @press="cancelDelete" />
-                            <native:button label="Borrar" variant="destructive" class="flex-1" @press="deleteList" />
+                            <native:button :label="__('app.common.cancel')" variant="secondary" class="flex-1" @press="cancelDelete" />
+                            <native:button :label="__('app.list_detail.delete_list')" variant="destructive" class="flex-1" @press="deleteList" />
                         </native:row>
                     </native:column>
                 @else
-                    <native:button label="Borrar lista" variant="ghost" class="mt-4 w-full" @press="requestDelete" />
+                    <native:button :label="__('app.list_detail.delete_list')" variant="ghost" class="mt-4 w-full" @press="requestDelete" />
                 @endif
 
             @endif
@@ -127,28 +127,28 @@
 
     <native:bottom-sheet :visible="$openItemId !== null" @dismiss="closeItem" detents="fit">
         <native:column class="w-full gap-4 p-5">
-            <native:text class="text-lg font-bold text-theme-on-background">Editar ítem</native:text>
+            <native:text class="text-lg font-bold text-theme-on-background">{{ __('app.list_detail.edit_item') }}</native:text>
 
             <native:outlined-text-input
-                label="Cantidad"
+                :label="__('app.list_detail.quantity')"
                 keyboard="decimal"
                 native:model.debounce.300ms="draftQuantity"
             />
 
             <native:outlined-text-input
-                label="Unidad"
-                placeholder="kg, un, l"
+                :label="__('app.list_detail.unit')"
+                :placeholder="__('app.list_detail.unit_placeholder')"
                 native:model.debounce.300ms="draftUnit"
             />
 
             <native:outlined-text-input
-                label="Nota"
-                placeholder="Sin sal, marca blanca…"
+                :label="__('app.list_detail.note')"
+                :placeholder="__('app.list_detail.note_placeholder')"
                 native:model.debounce.300ms="draftNotes"
             />
 
-            <native:button label="Guardar" class="w-full" @press="saveItem" />
-            <native:button label="Quitar de la lista" variant="destructive" class="w-full" @press="deleteItem" />
+            <native:button :label="__('app.list_detail.save')" class="w-full" @press="saveItem" />
+            <native:button :label="__('app.list_detail.remove')" variant="destructive" class="w-full" @press="deleteItem" />
         </native:column>
     </native:bottom-sheet>
 </native:column>

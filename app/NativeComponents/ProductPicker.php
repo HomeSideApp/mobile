@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\CatalogService;
 use App\Services\Homeside\ListsService;
+use App\Services\Settings\LocaleService;
 use App\Support\CardColor;
 use App\Support\ProductIcon;
 use Illuminate\View\View;
@@ -43,6 +44,8 @@ final class ProductPicker extends NativeComponent
 
     public function mount(): void
     {
+        (new LocaleService)->apply();
+
         $this->listId = $this->param('list');
         $this->householdId = $this->param('household');
 
@@ -51,7 +54,7 @@ final class ProductPicker extends NativeComponent
 
     public function navTitle(): string
     {
-        return 'Agregar ítem';
+        return __('app.picker.title');
     }
 
     public function onQuery(?string $value = null): void

@@ -6,6 +6,7 @@ use App\Exceptions\HomesideException;
 use App\Services\Homeside\AppUpdateChecker;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\Session;
+use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
@@ -27,6 +28,14 @@ final class Profile extends NativeComponent
     public ?string $userEmail = null;
 
     public ?string $locale = null;
+
+    /** Idioma elegido en este dispositivo. */
+    public string $appLocale = 'es-ES';
+
+    /** @var list<array{code: string, label: string}> */
+    public array $locales = [];
+
+    public ?string $languageNotice = null;
 
     public bool $twoFactorEnabled = false;
 
@@ -55,7 +64,7 @@ final class Profile extends NativeComponent
 
     public ?string $downloadMessage = null;
 
-    /** @var array<string, array{label: string, description: string}> */
+    /** @var array<string, array{manifest: string}> */
     public array $channels = [];
 
     public function mount(): void
@@ -70,7 +79,54 @@ final class Profile extends NativeComponent
 
     public function navTitle(): string
     {
-        return 'Perfil';
+        return __('app.profile.title');
+    }
+
+    /**
+     * Cambia el idioma de la app y, si hay sesión, lo guarda en la cuenta.
+     *
+     * El servidor traduce categorías y productos con `user.locale`, así que
+     * dejar los dos desalineados mostraría la UI en un idioma y el catálogo en
+     * otro.
+     */
+    public function setLocale(string $locale): void
+    {
+        $service = new LocaleService;
+
+        if (! $service->set($locale)) {
+            return;
+        }
+
+        $this->appLocale = $locale;
+        $this->locale = $locale;
+        $this->languageNotice = null;
+
+        if (! $this->hasSession) {
+            return;
+        }
+
+        $cached = (new Session)->user();
+        $name = is_array($cached) ? ($cached['name'] ?? null) : null;
+        $email = is_array($cached) ? ($cached['email'] ?? null) : null;
+
+        if (! is_string($name) || ! is_string($email)) {
+            return;
+        }
+
+        try {
+            $user = (new AuthService)->updateProfile([
+                'name' => $name,
+                'email' => $email,
+                'locale' => $locale,
+            ]);
+        } catch (\Throwable) {
+            $this->languageNotice = __('app.profile.language_failed');
+
+            return;
+        }
+
+        $this->applyUser($user);
+        $this->languageNotice = __('app.profile.language_changed');
     }
 
     public function changeServer(): void
@@ -120,7 +176,7 @@ final class Profile extends NativeComponent
 
             if (is_string($url) && $url !== '') {
                 Browser::open($url);
-                $this->downloadMessage = 'Abrimos la descarga en el navegador.';
+                $this->downloadMessage = __('app.updates.opened_browser');
             }
 
             return;
@@ -148,7 +204,7 @@ final class Profile extends NativeComponent
 
         if (isset($result['error'])) {
             $this->downloadStatus = 'failed';
-            $this->downloadMessage = $result['message'] ?? 'No pudimos descargar la actualización.';
+            $this->downloadMessage = $result['message'] ?? __('app.updates.failed_download');
 
             return;
         }
@@ -156,7 +212,7 @@ final class Profile extends NativeComponent
         $this->downloadId = $result['id'] ?? null;
         $this->downloadStatus = 'running';
         $this->downloadProgress = 0;
-        $this->downloadMessage = 'Descargando…';
+        $this->downloadMessage = __('app.updates.downloading', ['progress' => 0]);
     }
 
     /**
@@ -178,7 +234,7 @@ final class Profile extends NativeComponent
 
         if (isset($status['error'])) {
             $this->downloadStatus = 'failed';
-            $this->downloadMessage = $status['message'] ?? 'No pudimos leer el estado de la descarga.';
+            $this->downloadMessage = $status['message'] ?? __('app.updates.failed_status');
 
             return;
         }
@@ -188,9 +244,9 @@ final class Profile extends NativeComponent
 
         match ($this->downloadStatus) {
             'successful' => $this->installDownloadedUpdate(),
-            'failed' => $this->downloadMessage = 'La descarga falló. Probá de nuevo.',
-            'paused' => $this->downloadMessage = 'La descarga está en pausa.',
-            default => $this->downloadMessage = 'Descargando… '.$this->downloadProgress.'%',
+            'failed' => $this->downloadMessage = __('app.updates.download_failed'),
+            'paused' => $this->downloadMessage = __('app.updates.paused'),
+            default => $this->downloadMessage = __('app.updates.downloading', ['progress' => $this->downloadProgress]),
         };
     }
 
@@ -206,7 +262,7 @@ final class Profile extends NativeComponent
             // El plugin es opcional: si el lado nativo no contesta, la pantalla
             // no puede caerse por eso.
             $this->downloadStatus = 'failed';
-            $this->downloadMessage = 'No pudimos abrir el instalador de Android.';
+            $this->downloadMessage = __('app.updates.installer_failed');
 
             return;
         }
@@ -218,19 +274,19 @@ final class Profile extends NativeComponent
                 // El mensaje alcanza aunque no podamos abrir los ajustes.
             }
 
-            $this->downloadMessage = 'Habilitá «instalar apps desconocidas» y volvé a intentar.';
+            $this->downloadMessage = __('app.updates.unknown_sources');
 
             return;
         }
 
         if (isset($result['error'])) {
             $this->downloadStatus = 'failed';
-            $this->downloadMessage = $result['message'] ?? 'No pudimos abrir el instalador.';
+            $this->downloadMessage = $result['message'] ?? __('app.updates.installer_failed');
 
             return;
         }
 
-        $this->downloadMessage = 'Seguí los pasos del instalador de Android.';
+        $this->downloadMessage = __('app.updates.installer_steps');
     }
 
     /**

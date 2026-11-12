@@ -3,6 +3,7 @@
 namespace App\Services\Homeside;
 
 use App\Exceptions\HomesideException;
+use App\Services\Settings\LocaleService;
 
 /**
  * Autenticación contra la API de HomeSide.
@@ -124,6 +125,27 @@ final class AuthService
     {
         $payload = $this->session->client()->get('/me');
         $user = Session::data($payload);
+
+        $this->session->rememberUser($user);
+
+        // La cuenta manda: el backend traduce el catálogo con este locale, así
+        // que la app no puede quedarse en otro idioma.
+        (new LocaleService)->syncFromUser($user);
+
+        return $user;
+    }
+
+    /**
+     * Actualiza el perfil en el servidor y refresca el usuario cacheado.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     *
+     * @throws HomesideException
+     */
+    public function updateProfile(array $payload): array
+    {
+        $user = Session::data($this->session->client()->patch('/me/profile', $payload));
 
         $this->session->rememberUser($user);
 
