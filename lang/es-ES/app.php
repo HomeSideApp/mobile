@@ -7,6 +7,7 @@ return [
         'loading' => 'Cargando…',
         'cancel' => 'Cancelar',
         'save' => 'Guardar',
+        'back' => 'Volver',
         'retry' => 'Reintentar',
         'change_server' => 'Cambiar servidor',
     ],

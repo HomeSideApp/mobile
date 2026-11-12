@@ -425,6 +425,29 @@ class ListDetailTest extends TestCase
         @unlink($path);
     }
 
+    public function test_the_icon_picker_replaces_the_form_and_comes_back(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+        Http::fake(['*/api/v1/icons' => Http::response(['data' => [
+            ['name' => 'apple.webp', 'url' => 'https://homeside.cloud/icons/webp/apple.webp'],
+            ['name' => 'bread.webp', 'url' => 'https://homeside.cloud/icons/webp/bread.webp'],
+        ]])]);
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->assertSee('Cantidad')
+            // El selector ocupa la hoja entera: el formulario no se apila debajo.
+            ->call('toggleIconPicker')
+            ->assertSet('iconPickerOpen', true)
+            ->assertSee('Buscar ícono…')
+            ->assertDontSee('Cantidad')
+            ->set('iconSearch', 'bread')
+            ->call('toggleIconPicker')
+            ->assertSet('iconPickerOpen', false)
+            ->assertSee('Cantidad');
+    }
+
     public function test_a_cancelled_pick_uploads_nothing(): void
     {
         $this->connect();

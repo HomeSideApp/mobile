@@ -291,120 +291,141 @@
 
     {{-- ── Hoja de detalle del ítem ──────────────────────────────────── --}}
     <native:bottom-sheet :visible="$openItemId !== null" @dismiss="closeItem" detents="large">
-        <native:column class="w-full gap-4 p-5">
+        {{-- Todo el cuerpo scrollea: con el teclado abierto, los campos de abajo
+             tienen que poder alcanzarse. El selector de íconos reemplaza al
+             formulario en vez de sumarse, para no hacer una hoja interminable. --}}
+        <native:scroll-view class="w-full flex-1">
+            <native:column class="w-full gap-4 p-5 pb-10">
 
-            <native:text class="text-lg font-bold text-theme-on-background">{{ __('app.list_detail.edit_item') }}</native:text>
+                <native:row class="w-full items-center gap-2">
+                    <native:text class="flex-1 text-lg font-bold text-theme-on-background">
+                        {{ $iconPickerOpen ? __('app.list_detail.change_icon') : __('app.list_detail.edit_item') }}
+                    </native:text>
 
-            {{-- Foto: preview de lo guardado o de lo recién elegido --}}
-            <native:column class="w-full gap-2">
-                @if ($draftImageUrl !== null)
-                    <native:stack class="w-full h-[140]">
-                        <native:image :src="$draftImageUrl" class="h-[140] w-full rounded-lg" fit="cover" />
+                    @if ($iconPickerOpen)
+                        <native:pressable class="rounded-lg bg-theme-surface px-3 py-2" @press="toggleIconPicker">
+                            <native:text class="text-xs font-semibold text-theme-primary">{{ __('app.common.back') }}</native:text>
+                        </native:pressable>
+                    @endif
+                </native:row>
+
+                @if ($iconPickerOpen)
+
+                    <native:outlined-text-input
+                        :placeholder="__('app.list_detail.icon_search')"
+                        leading-icon="search"
+                        native:model.debounce.300ms="iconSearch"
+                    />
+
+                    <native:row class="w-full flex-wrap gap-2">
+                        @foreach ($this->filteredIcons() as $icon)
+                            <native:pressable
+                                :native:key="'icon-'.$icon['name']"
+                                class="size-[44] items-center justify-center rounded-lg border"
+                                :class="$draftIcon === $icon['name'] ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
+                                @press="selectIcon({{ json_encode($icon['name']) }})"
+                            >
+                                <native:image :src="$icon['url']" class="h-[26] w-[26]" fit="contain" />
+                            </native:pressable>
+                        @endforeach
+                    </native:row>
+
+                @else
+
+                    {{-- Foto: preview de lo guardado o de lo recién elegido --}}
+                    <native:column class="w-full gap-2">
+                        @if ($draftImageUrl !== null)
+                            <native:stack class="w-full h-[140]">
+                                <native:image :src="$draftImageUrl" class="h-[140] w-full rounded-lg" fit="cover" />
+
+                                @if ($uploadState === 'uploading')
+                                    <native:progress-bar
+                                        indeterminate
+                                        class="absolute bottom-0 left-0 right-0 h-[4]"
+                                    />
+                                @endif
+                            </native:stack>
+                        @else
+                            <native:column class="h-[100] w-full items-center justify-center rounded-lg border border-theme-outline bg-theme-surface-variant">
+                                <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.photo_hint') }}</native:text>
+                            </native:column>
+                        @endif
 
                         @if ($uploadState === 'uploading')
-                            <native:progress-bar
-                                indeterminate
-                                class="absolute bottom-0 left-0 right-0 h-[4]"
-                            />
+                            <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.uploading') }}</native:text>
                         @endif
-                    </native:stack>
-                @else
-                    <native:column class="h-[100] w-full items-center justify-center rounded-lg border border-theme-outline bg-theme-surface-variant">
-                        <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.photo_hint') }}</native:text>
+
+                        <native:row class="w-full gap-2">
+                            <native:button
+                                :label="$draftImageUrl !== null ? __('app.list_detail.change_photo') : __('app.list_detail.upload_photo')"
+                                variant="secondary"
+                                class="flex-1"
+                                :disabled="$uploadState === 'uploading'"
+                                @press="pickPhoto"
+                            />
+                            <native:button
+                                :label="__('app.list_detail.change_icon')"
+                                variant="secondary"
+                                class="flex-1"
+                                @press="toggleIconPicker"
+                            />
+                        </native:row>
+
+                        @if ($itemNotice)
+                            <native:text class="text-xs text-theme-success">{{ $itemNotice }}</native:text>
+                        @endif
                     </native:column>
+
+                    <native:outlined-text-input
+                        :label="__('app.list_detail.quantity')"
+                        keyboard="decimal"
+                        native:model.debounce.300ms="draftQuantity"
+                    />
+
+                    <native:outlined-text-input
+                        :label="__('app.list_detail.unit')"
+                        :placeholder="__('app.list_detail.unit_placeholder')"
+                        native:model.debounce.300ms="draftUnit"
+                    />
+
+                    <native:outlined-text-input
+                        :label="__('app.list_detail.note')"
+                        :placeholder="__('app.list_detail.note_placeholder')"
+                        native:model.debounce.300ms="draftNotes"
+                    />
+
+                    @if (count($categoryOptions) > 0)
+                        <native:select
+                            :label="__('app.list_detail.category')"
+                            :value="$draftCategoryName"
+                            :options="$categoryOptions"
+                            @change="setDraftCategory"
+                        />
+                    @endif
+
+                    @if (count($storeOptions) > 0)
+                        <native:select
+                            :label="__('app.list_detail.store')"
+                            :value="$draftStoreName"
+                            :options="$storeOptions"
+                            @change="setDraftStore"
+                        />
+                    @endif
+
+                    @if ($itemError)
+                        <native:column class="w-full rounded-lg bg-theme-destructive/10 p-3">
+                            <native:text class="text-sm text-theme-destructive">{{ $itemError }}</native:text>
+                        </native:column>
+                    @endif
+
+                    <native:button :label="__('app.list_detail.save')" class="w-full" @press="saveItem" />
+
+                    {{-- Acción destructiva visible, no escondida al final de la hoja. --}}
+                    <native:button :label="__('app.list_detail.remove')" variant="destructive" class="w-full" @press="deleteItem" />
+
                 @endif
 
-                @if ($uploadState === 'uploading')
-                    <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.uploading') }}</native:text>
-                @endif
-
-                <native:button
-                    :label="$draftImageUrl !== null ? __('app.list_detail.change_photo') : __('app.list_detail.upload_photo')"
-                    variant="secondary"
-                    class="w-full"
-                    :disabled="$uploadState === 'uploading'"
-                    @press="pickPhoto"
-                />
-
-                @if ($itemNotice)
-                    <native:text class="text-xs text-theme-success">{{ $itemNotice }}</native:text>
-                @endif
             </native:column>
-
-            <native:outlined-text-input
-                :label="__('app.list_detail.quantity')"
-                keyboard="decimal"
-                native:model.debounce.300ms="draftQuantity"
-            />
-
-            <native:outlined-text-input
-                :label="__('app.list_detail.unit')"
-                :placeholder="__('app.list_detail.unit_placeholder')"
-                native:model.debounce.300ms="draftUnit"
-            />
-
-            <native:outlined-text-input
-                :label="__('app.list_detail.note')"
-                :placeholder="__('app.list_detail.note_placeholder')"
-                native:model.debounce.300ms="draftNotes"
-            />
-
-            @if (count($categoryOptions) > 0)
-                <native:select
-                    :label="__('app.list_detail.category')"
-                    :value="$draftCategoryName"
-                    :options="$categoryOptions"
-                    @change="setDraftCategory"
-                />
-            @endif
-
-            @if (count($storeOptions) > 0)
-                <native:select
-                    :label="__('app.list_detail.store')"
-                    :value="$draftStoreName"
-                    :options="$storeOptions"
-                    @change="setDraftStore"
-                />
-            @endif
-
-            {{-- Ícono --}}
-            <native:button
-                :label="__('app.list_detail.change_icon')"
-                variant="secondary"
-                class="w-full"
-                @press="toggleIconPicker"
-            />
-
-            @if ($iconPickerOpen)
-                <native:outlined-text-input
-                    :placeholder="__('app.list_detail.icon_search')"
-                    leading-icon="search"
-                    native:model.debounce.300ms="iconSearch"
-                />
-
-                <native:row class="w-full flex-wrap gap-2">
-                    @foreach ($this->filteredIcons() as $icon)
-                        <native:pressable
-                            :native:key="'icon-'.$icon['name']"
-                            class="size-[44] items-center justify-center rounded-lg border"
-                            :class="$draftIcon === $icon['name'] ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
-                            @press="selectIcon({{ json_encode($icon['name']) }})"
-                        >
-                            <native:image :src="$icon['url']" class="h-[26] w-[26]" fit="contain" />
-                        </native:pressable>
-                    @endforeach
-                </native:row>
-            @endif
-
-            @if ($itemError)
-                <native:column class="w-full rounded-lg bg-theme-destructive/10 p-3">
-                    <native:text class="text-sm text-theme-destructive">{{ $itemError }}</native:text>
-                </native:column>
-            @endif
-
-            <native:button :label="__('app.list_detail.save')" class="w-full" @press="saveItem" />
-            <native:button :label="__('app.list_detail.remove')" variant="destructive" class="w-full" @press="deleteItem" />
-
-        </native:column>
+        </native:scroll-view>
     </native:bottom-sheet>
 </native:column>
