@@ -30,6 +30,13 @@
                 @if ($languageNotice)
                     <native:text class="text-xs text-theme-on-surface-variant">{{ $languageNotice }}</native:text>
                 @endif
+
+                <native:select
+                    :label="__('app.profile.appearance')"
+                    :value="$appearanceValue"
+                    :options="$appearanceOptions"
+                    @change="setAppearanceOption"
+                />
             </native:column>
 
             <native:column class="w-full gap-1 rounded-lg bg-theme-surface p-4">

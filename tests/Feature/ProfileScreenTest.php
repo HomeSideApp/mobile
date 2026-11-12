@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\NativeComponents\Profile;
 use App\Services\Homeside\AppUpdateChecker;
+use App\Services\Settings\AppearanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Native\Mobile\Testing\Native;
@@ -52,6 +53,23 @@ class ProfileScreenTest extends TestCase
         Native::test(Profile::class)
             ->assertSee('Estás al día.')
             ->assertSet('updateAvailable', false);
+    }
+
+    public function test_the_appearance_is_a_native_select_and_persists(): void
+    {
+        config(['nativephp.version_code' => 50]);
+        Http::fake(['*/releases/*/latest.json' => Http::response('', 404)]);
+
+        $component = Native::test(Profile::class, platform: 'android')
+            ->assertSet('appearance', 'system')
+            ->assertSet('appearanceOptions', ['Sistema', 'Claro', 'Oscuro'])
+            ->assertSet('appearanceValue', 'Sistema')
+            ->call('setAppearanceOption', 'Claro')
+            ->assertSet('appearance', 'light')
+            ->assertSet('appearanceValue', 'Claro');
+
+        $this->assertSame('light', (new AppearanceService)->current());
+        $this->assertSame('light', $component->get('appearance'));
     }
 
     public function test_downloading_opens_the_apk_url_in_the_browser(): void

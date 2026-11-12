@@ -6,6 +6,7 @@ use App\Exceptions\HomesideException;
 use App\Services\Homeside\AppUpdateChecker;
 use App\Services\Homeside\AuthService;
 use App\Services\Homeside\Session;
+use App\Services\Settings\AppearanceService;
 use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Poll;
@@ -49,6 +50,14 @@ final class Profile extends NativeComponent
     public string $channelValue = '';
 
     public string $channelDescription = '';
+
+    /** system | light | dark */
+    public string $appearance = 'system';
+
+    /** @var list<string> */
+    public array $appearanceOptions = [];
+
+    public string $appearanceValue = '';
 
     public bool $twoFactorEnabled = false;
 
@@ -107,6 +116,39 @@ final class Profile extends NativeComponent
         $this->locales = $service->options();
         $this->localeOptions = array_column($this->locales, 'label');
         $this->localeValue = $this->localeLabels()[$this->appLocale] ?? '';
+
+        // Las etiquetas de apariencia también están traducidas.
+        $this->refreshAppearance();
+    }
+
+    private function refreshAppearance(): void
+    {
+        $service = new AppearanceService;
+
+        $this->appearance = $service->current();
+        $this->appearanceOptions = array_values(array_map(
+            static fn (array $option): string => $option['label'],
+            $service->options(),
+        ));
+        $this->appearanceValue = (string) __('app.profile.appearance_'.$this->appearance);
+    }
+
+    /**
+     * El select devuelve la etiqueta traducida; se mapea contra las mismas
+     * traducciones con las que se armó la lista.
+     */
+    public function setAppearanceOption(?string $label = null): void
+    {
+        $label = $label ?? $this->appearanceValue;
+
+        foreach (AppearanceService::SUPPORTED as $code) {
+            if ((string) __('app.profile.appearance_'.$code) === $label) {
+                (new AppearanceService)->set($code);
+                $this->refreshAppearance();
+
+                return;
+            }
+        }
     }
 
     /**

@@ -31,9 +31,9 @@ class TranslationsTest extends TestCase
             preg_match_all("/__\\(\\s*['\"](app\\.[A-Za-z0-9_.]+)['\"]/", $contents, $matches);
 
             foreach ($matches[1] as $key) {
-                // Las claves armadas con concatenación terminan en punto: no se
-                // pueden verificar estáticamente.
-                if (! str_ends_with($key, '.')) {
+                // Las claves armadas con concatenación terminan en punto o en
+                // guión bajo: no se pueden verificar estáticamente.
+                if (! str_ends_with($key, '.') && ! str_ends_with($key, '_')) {
                     $keys[$key] = true;
                 }
             }
