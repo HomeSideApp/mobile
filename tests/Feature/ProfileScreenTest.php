@@ -33,6 +33,19 @@ class ProfileScreenTest extends TestCase
         ]);
     }
 
+    public function test_the_diagnostic_panel_shows_the_palette_the_body_resolves(): void
+    {
+        $this->fakeManifest();
+
+        // Panel temporal: comprueba que lo que muestra la pantalla coincide con
+        // lo que el parser le da al cuerpo, que es lo que hace falta para
+        // diagnosticar en un dispositivo sin adb.
+        Native::test(Profile::class)
+            ->call('setAppearanceOption', 'dark')
+            ->assertSee('body bg')
+            ->assertSee((string) config('native-ui.theme.dark.background'));
+    }
+
     public function test_it_shows_the_current_version_and_the_offered_update(): void
     {
         config(['nativephp.version_code' => 10, 'nativephp.version' => '0.1.10-dev']);
