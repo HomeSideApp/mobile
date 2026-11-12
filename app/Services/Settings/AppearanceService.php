@@ -23,6 +23,17 @@ final class AppearanceService
     public const array SUPPORTED = ['system', 'light', 'dark'];
 
     /**
+     * Cambio pendiente de empujar al dispositivo.
+     *
+     * `NativeUI.Theme.Set` se ejecuta en el hilo principal con un `post`, así
+     * que si se empuja dentro de la acción y el árbol se publica enseguida, el
+     * renderer gana la carrera y dibuja el cuerpo con los tokens viejos (la
+     * cabecera cambia igual porque la pinta PHP). Empujando desde el layout,
+     * que corre justo antes de publicar, el tema llega primero.
+     */
+    private static bool $pending = false;
+
+    /**
      * Paletas originales, capturadas una sola vez.
      *
      * `Theme::merge()` no sólo cambia los tokens: escribe el resultado en
@@ -59,9 +70,32 @@ final class AppearanceService
         }
 
         $this->settings->set(self::SETTING_KEY, $appearance);
-        $this->apply($appearance);
+
+        // Se aplica en el próximo render (ver `flush()`), no acá.
+        self::$pending = true;
 
         return true;
+    }
+
+    /**
+     * Empuja el cambio pendiente. La llaman los layouts antes de publicar el
+     * árbol de la pantalla, que es el único punto donde el tema llega antes que
+     * los elementos.
+     */
+    public function flush(): void
+    {
+        if (! self::$pending) {
+            return;
+        }
+
+        self::$pending = false;
+
+        $this->apply($this->current());
+    }
+
+    public function hasPendingChange(): bool
+    {
+        return self::$pending;
     }
 
     /**

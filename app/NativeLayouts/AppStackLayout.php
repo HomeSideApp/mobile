@@ -2,6 +2,7 @@
 
 namespace App\NativeLayouts;
 
+use App\Services\Settings\AppearanceService;
 use Native\Mobile\Edge\Layouts\Builders\NavBar;
 use Native\Mobile\Edge\Layouts\NativeLayout;
 use Native\Mobile\Edge\NativeComponent;
@@ -18,6 +19,10 @@ final class AppStackLayout extends NativeLayout
 
     public function navBar(NativeComponent $screen): ?NavBar
     {
+        // Último punto antes de publicar el árbol: si el usuario cambió la
+        // apariencia, el tema tiene que estar empujado ahora.
+        (new AppearanceService)->flush();
+
         return NavBar::make()
             ->title($screen->navTitle())
             ->back();

@@ -58,6 +58,29 @@ class AppearanceTest extends TestCase
         $this->assertSame('system', (new AppearanceService)->current());
     }
 
+    public function test_a_selector_change_is_pushed_on_the_next_render(): void
+    {
+        $service = new AppearanceService;
+
+        $service->set('light');
+
+        // Guardar no empuja: el layout lo hace antes de publicar el árbol.
+        $this->assertTrue($service->hasPendingChange());
+        $this->assertNull(Theme::get('dark.primary'));
+
+        $service->flush();
+
+        $this->assertFalse($service->hasPendingChange());
+        $this->assertSame($this->palette('light', 'primary'), Theme::get('dark.primary'));
+    }
+
+    public function test_flushing_without_a_pending_change_does_nothing(): void
+    {
+        (new AppearanceService)->flush();
+
+        $this->assertNull(Theme::get('dark.primary'));
+    }
+
     public function test_forcing_light_paints_the_dark_palette_with_light_tokens(): void
     {
         (new AppearanceService)->apply('light');
