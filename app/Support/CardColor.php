@@ -60,6 +60,23 @@ final class CardColor
     }
 
     /**
+     * Versión translúcida del color, para fondos suaves (el acordeón de
+     * categorías usa el color de la categoría al 12%).
+     */
+    public static function tint(?string $hex, float $alpha = 0.12): string
+    {
+        $rgb = self::toRgb($hex);
+
+        if ($rgb === null) {
+            $rgb = self::toRgb(self::FALLBACK) ?? [47, 160, 144];
+        }
+
+        $byte = (int) round(max(0.0, min(1.0, $alpha)) * 255);
+
+        return sprintf('#%02X%02X%02X%02X', $rgb[0], $rgb[1], $rgb[2], $byte);
+    }
+
+    /**
      * @return array{int, int, int}|null
      */
     private static function toRgb(?string $hex): ?array

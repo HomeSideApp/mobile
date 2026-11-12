@@ -11,6 +11,16 @@ return [
         'change_server' => 'Cambiar servidor',
     ],
 
+    'house' => [
+        'title' => 'Tu casa',
+        'subtitle' => 'Miembros, invitaciones y módulos del hogar activo.',
+    ],
+
+    'recipes' => [
+        'title' => 'Tu recetario',
+        'subtitle' => 'Recetas propias y del hogar, con modo cocina y «agregar a la lista».',
+    ],
+
     'server_setup' => [
         'title' => 'Conectar',
         'headline' => 'Tu casa, ordenada. Elegí a qué servidor conectarte.',
@@ -95,23 +105,22 @@ return [
         'delete_confirm' => '¿Borrar «:name» y sus ítems?',
         'not_found' => 'No encontramos la lista.',
         'needs_login' => 'Necesitás iniciar sesión',
+        'actions' => 'Acciones',
+        'rename' => 'Renombrar',
+        'pending_count' => ':count pendientes',
+        'search_placeholder' => 'Buscar producto…',
+        'categories' => 'Categorías',
+        'pending_hint' => 'Tocá para tildar · mantené para editar',
+        'upload_photo' => 'Subir foto',
+        'photo_failed' => 'No pudimos leer la foto elegida.',
+        'uploading' => 'Subiendo foto…',
+        'photo_uploaded' => 'Foto actualizada.',
+        'category' => 'Categoría',
+        'store' => 'Local',
+        'no_store' => 'Sin local',
+        'change_icon' => 'Cambiar ícono',
+        'icon_search' => 'Buscar ícono…',
     ],
-
-    'actions' => 'Acciones',
-    'rename' => 'Renombrar',
-    'pending_count' => ':count pendientes',
-    'search_placeholder' => 'Buscar producto…',
-    'categories' => 'Categorías',
-    'pending_hint' => 'Tocá para tildar · mantené para editar',
-    'upload_photo' => 'Subir foto',
-    'photo_failed' => 'No pudimos leer la foto elegida.',
-    'uploading' => 'Subiendo foto…',
-    'photo_uploaded' => 'Foto actualizada.',
-    'category' => 'Categoría',
-    'store' => 'Local',
-    'no_store' => 'Sin local',
-    'change_icon' => 'Cambiar ícono',
-    'icon_search' => 'Buscar ícono…',
 
     'picker' => [
         'title' => 'Agregar ítem',

@@ -221,9 +221,11 @@
                     </native:text>
 
                     @foreach ($categories as $category)
-                        <native:column :native:key="'cat-'.$category['id']" class="w-full overflow-hidden rounded-xl border border-theme-outline">
+                        {{-- `overflow-hidden` no existe en EDGE: en vez de recortar,
+                             cada hijo lleva el radio que le toca. --}}
+                        <native:column :native:key="'cat-'.$category['id']" class="w-full rounded-xl border border-theme-outline">
                             <native:pressable
-                                class="w-full px-4 py-3 bg-[{{ $category['color'] }}]"
+                                class="w-full px-4 py-3 bg-[{{ $category['color'] }}] {{ $category['open'] ? 'rounded-t-xl' : 'rounded-xl' }}"
                                 @press="toggleCategory({{ json_encode($category['id']) }})"
                             >
                                 <native:row class="w-full items-center gap-2">
@@ -246,7 +248,7 @@
                                         <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.common.loading') }}</native:text>
                                     </native:row>
                                 @else
-                                    <native:column class="w-full gap-2 p-2">
+                                    <native:column class="w-full gap-2 rounded-b-xl p-2 bg-[{{ $category['tint'] }}]">
                                         @foreach (array_chunk($category['products'], 3) as $row)
                                             <native:row class="w-full gap-2">
                                                 @foreach ($row as $product)

@@ -41,6 +41,15 @@ class CardColorTest extends TestCase
         $this->assertSame(CardColor::FALLBACK, CardColor::normalize('not-a-color'));
     }
 
+    public function test_tint_returns_an_alpha_hex(): void
+    {
+        $this->assertSame('#1E6B631F', CardColor::tint('#1E6B63'));
+        $this->assertSame('#1E6B6300', CardColor::tint('#1E6B63', 0.0));
+        $this->assertSame('#1E6B63FF', CardColor::tint('#1E6B63', 1.0));
+        // Entrada inválida: cae al color de marca en vez de romper el fondo.
+        $this->assertSame('#2FA0901F', CardColor::tint('nope'));
+    }
+
     public function test_normalize_returns_a_six_digit_hex(): void
     {
         $this->assertSame('#B42318', CardColor::normalize('#b42318'));

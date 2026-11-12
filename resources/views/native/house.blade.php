@@ -5,10 +5,10 @@
             <native:column class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant px-4 py-10">
                 <native:icon ios="house.fill" android="home" :size="30" class="text-theme-primary" />
                 <native:text class="text-base font-semibold text-theme-on-surface">
-                    Tu casa
+                    {{ __('app.house.title') }}
                 </native:text>
                 <native:text class="text-center text-sm text-theme-on-surface-variant">
-                    Miembros, invitaciones y módulos del hogar activo.
+                    {{ __('app.house.subtitle') }}
                 </native:text>
             </native:column>
 

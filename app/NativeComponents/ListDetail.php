@@ -175,6 +175,7 @@ final class ListDetail extends NativeComponent
             'id' => (string) ($category['id'] ?? ''),
             'name' => (string) ($category['name'] ?? ''),
             'color' => CardColor::normalize(is_string($category['color'] ?? null) ? $category['color'] : null),
+            'tint' => CardColor::tint(is_string($category['color'] ?? null) ? $category['color'] : null),
             'open' => false,
             'loaded' => false,
             'products' => [],

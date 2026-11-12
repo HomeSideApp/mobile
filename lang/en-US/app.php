@@ -11,6 +11,16 @@ return [
         'change_server' => 'Change server',
     ],
 
+    'house' => [
+        'title' => 'Your home',
+        'subtitle' => "Members, invitations and the active household's modules.",
+    ],
+
+    'recipes' => [
+        'title' => 'Your cookbook',
+        'subtitle' => 'Your recipes and the household ones, with cook mode and "add to a list".',
+    ],
+
     'server_setup' => [
         'title' => 'Connect',
         'headline' => 'Your home, in order. Choose which server to connect to.',
@@ -95,23 +105,22 @@ return [
         'delete_confirm' => 'Delete “:name” and its items?',
         'not_found' => 'We could not find that list.',
         'needs_login' => 'You need to sign in',
+        'actions' => 'Actions',
+        'rename' => 'Rename',
+        'pending_count' => ':count pending',
+        'search_placeholder' => 'Search a product…',
+        'categories' => 'Categories',
+        'pending_hint' => 'Tap to check · hold to edit',
+        'upload_photo' => 'Upload photo',
+        'photo_failed' => 'We could not read the chosen photo.',
+        'uploading' => 'Uploading photo…',
+        'photo_uploaded' => 'Photo updated.',
+        'category' => 'Category',
+        'store' => 'Store',
+        'no_store' => 'No store',
+        'change_icon' => 'Change icon',
+        'icon_search' => 'Search an icon…',
     ],
-
-    'actions' => 'Actions',
-    'rename' => 'Rename',
-    'pending_count' => ':count pending',
-    'search_placeholder' => 'Search a product…',
-    'categories' => 'Categories',
-    'pending_hint' => 'Tap to check · hold to edit',
-    'upload_photo' => 'Upload photo',
-    'photo_failed' => 'We could not read the chosen photo.',
-    'uploading' => 'Uploading photo…',
-    'photo_uploaded' => 'Photo updated.',
-    'category' => 'Category',
-    'store' => 'Store',
-    'no_store' => 'No store',
-    'change_icon' => 'Change icon',
-    'icon_search' => 'Search an icon…',
 
     'picker' => [
         'title' => 'Add item',
