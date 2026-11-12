@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Services\Settings\AppearanceService;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Native\Mobile\Edge\TailwindParser;
 use Native\Mobile\UI\Theme;
 use Tests\TestCase;
 
@@ -58,27 +59,29 @@ class AppearanceTest extends TestCase
         $this->assertSame('system', (new AppearanceService)->current());
     }
 
-    public function test_a_selector_change_is_pushed_on_the_next_render(): void
+    public function test_changing_the_appearance_recolours_theme_classes(): void
     {
         $service = new AppearanceService;
 
-        $service->set('light');
+        $service->apply('system');
+        $before = TailwindParser::parse('bg-theme-background');
 
-        // Guardar no empuja: el layout lo hace antes de publicar el árbol.
-        $this->assertTrue($service->hasPendingChange());
-        $this->assertNull(Theme::get('dark.primary'));
+        // El cuerpo no recibe tokens: `TailwindParser` resuelve `bg-theme-*` a
+        // hex al parsear la clase. El test comprueba que un cambio de apariencia
+        // cambia ese hex sin reiniciar el proceso.
+        $service->apply('dark');
+        $after = TailwindParser::parse('bg-theme-background');
 
-        $service->flush();
-
-        $this->assertFalse($service->hasPendingChange());
-        $this->assertSame($this->palette('light', 'primary'), Theme::get('dark.primary'));
+        $this->assertNotSame($before, $after);
+        $this->assertSame($this->palette('dark', 'background'), $after['bg']);
+        $this->assertArrayNotHasKey('dark', $after, 'la paleta forzada no deja companion oscuro');
     }
 
-    public function test_flushing_without_a_pending_change_does_nothing(): void
+    public function test_a_selector_change_applies_immediately(): void
     {
-        (new AppearanceService)->flush();
+        (new AppearanceService)->set('light');
 
-        $this->assertNull(Theme::get('dark.primary'));
+        $this->assertSame($this->palette('light', 'primary'), Theme::get('dark.primary'));
     }
 
     public function test_forcing_light_paints_the_dark_palette_with_light_tokens(): void

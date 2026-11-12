@@ -2,6 +2,7 @@
 
 namespace App\Services\Settings;
 
+use Native\Mobile\Edge\TailwindParser;
 use Native\Mobile\UI\Theme;
 
 /**
@@ -23,15 +24,17 @@ final class AppearanceService
     public const array SUPPORTED = ['system', 'light', 'dark'];
 
     /**
-     * Cambio pendiente de empujar al dispositivo.
+     * Las clases `bg-theme-*` no llegan al renderer como token: `TailwindParser`
+     * las resuelve a hex **en PHP** al parsear la clase (`parseThemeBg()` lee la
+     * config), y el chrome las resuelve el layout llamando a `theme()`. O sea que
+     * el color del cuerpo se congela en el momento en que se parsea la vista.
      *
-     * `NativeUI.Theme.Set` se ejecuta en el hilo principal con un `post`, así
-     * que si se empuja dentro de la acción y el árbol se publica enseguida, el
-     * renderer gana la carrera y dibuja el cuerpo con los tokens viejos (la
-     * cabecera cambia igual porque la pinta PHP). Empujando desde el layout,
-     * que corre justo antes de publicar, el tema llega primero.
+     * Por eso el merge tiene que ocurrir ANTES de que la pantalla se vuelva a
+     * renderizar. La caché del parser ya se limpia sola en cada request (el
+     * plugin registra los resolvers en el boot, y eso llama a `clearCache()`),
+     * así que acá se limpia igual pero por las dudas: es barato y evita depender
+     * de ese detalle interno si algún día cambia.
      */
-    private static bool $pending = false;
 
     /**
      * Paletas originales, capturadas una sola vez.
@@ -71,31 +74,12 @@ final class AppearanceService
 
         $this->settings->set(self::SETTING_KEY, $appearance);
 
-        // Se aplica en el próximo render (ver `flush()`), no acá.
-        self::$pending = true;
+        // Se aplica ya, antes de que la pantalla se vuelva a renderizar: el
+        // merge y la limpieza de la caché tienen que ocurrir ANTES de que se
+        // resuelvan las clases de la vista.
+        $this->apply($appearance);
 
         return true;
-    }
-
-    /**
-     * Empuja el cambio pendiente. La llaman los layouts antes de publicar el
-     * árbol de la pantalla, que es el único punto donde el tema llega antes que
-     * los elementos.
-     */
-    public function flush(): void
-    {
-        if (! self::$pending) {
-            return;
-        }
-
-        self::$pending = false;
-
-        $this->apply($this->current());
-    }
-
-    public function hasPendingChange(): bool
-    {
-        return self::$pending;
     }
 
     /**
@@ -142,6 +126,12 @@ final class AppearanceService
             'dark' => Theme::merge(['light' => $dark, 'dark' => $dark]),
             default => Theme::merge(['light' => $light, 'dark' => $dark]),
         };
+
+        // Defensivo: que las clases ya parseadas no sobrevivan al cambio si el
+        // proceso queda vivo. Ver el docblock de la clase.
+        if (class_exists(TailwindParser::class)) {
+            TailwindParser::clearCache();
+        }
     }
 
     /**
