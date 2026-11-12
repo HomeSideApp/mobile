@@ -254,6 +254,7 @@ final class AppUpdateChecker
             'channel_label' => $this->channelLabel(),
             'latest_version' => is_string($manifest['version'] ?? null) ? $manifest['version'] : null,
             'latest_version_code' => $latestCode,
+            'min_version_code' => $minimumCode,
             'apk_url' => is_string($manifest['apk_url'] ?? null) ? $manifest['apk_url'] : null,
             'sha256' => is_string($manifest['sha256'] ?? null) ? strtolower($manifest['sha256']) : null,
             'notes' => is_string($manifest['notes'] ?? null) && $manifest['notes'] !== '' ? $manifest['notes'] : null,
@@ -268,8 +269,13 @@ final class AppUpdateChecker
      */
     private function withCurrentVersion(array $status): array
     {
+        // El `state` guardado describe el momento del chequeo, no el de ahora:
+        // después de instalar la actualización el código instalado cambió y el
+        // resultado cacheado seguiría ofreciendo la versión que ya está puesta.
+        $state = $this->resolveState($status);
+
         return [
-            'state' => (string) ($status['state'] ?? self::STATE_UNKNOWN),
+            'state' => $state,
             'channel' => (string) ($status['channel'] ?? $this->channel()),
             'channel_label' => $this->channelLabel(),
             'current_version' => $this->currentVersion(),
@@ -279,9 +285,48 @@ final class AppUpdateChecker
             'apk_url' => $status['apk_url'] ?? null,
             'sha256' => $status['sha256'] ?? null,
             'notes' => $status['notes'] ?? null,
+            'min_version_code' => is_numeric($status['min_version_code'] ?? null)
+                ? (int) $status['min_version_code']
+                : 0,
             'checked_at' => $status['checked_at'] ?? null,
-            'message' => $status['message'] ?? null,
+            'message' => $this->resolveMessage($state, $status),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $status
+     */
+    private function resolveState(array $status): string
+    {
+        $latest = $status['latest_version_code'] ?? null;
+
+        // Sin versión publicada (canal vacío, error de red) se respeta el estado
+        // guardado: no hay nada que comparar.
+        if (! is_numeric($latest)) {
+            return (string) ($status['state'] ?? self::STATE_UNKNOWN);
+        }
+
+        $current = $this->currentVersionCode();
+        $minimum = is_numeric($status['min_version_code'] ?? null) ? (int) $status['min_version_code'] : 0;
+
+        return match (true) {
+            $current < $minimum => self::STATE_REQUIRED,
+            (int) $latest > $current => self::STATE_OPTIONAL,
+            default => self::STATE_UP_TO_DATE,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $status
+     */
+    private function resolveMessage(string $state, array $status): ?string
+    {
+        return match ($state) {
+            self::STATE_REQUIRED => __('app.updates.required'),
+            self::STATE_OPTIONAL => __('app.updates.available'),
+            self::STATE_UP_TO_DATE => null,
+            default => $status['message'] ?? null,
+        };
     }
 
     /**
@@ -308,6 +353,7 @@ final class AppUpdateChecker
             'channel' => $status['channel'],
             'latest_version' => $status['latest_version'],
             'latest_version_code' => $status['latest_version_code'],
+            'min_version_code' => $status['min_version_code'] ?? 0,
             'apk_url' => $status['apk_url'],
             'sha256' => $status['sha256'],
             'notes' => $status['notes'],

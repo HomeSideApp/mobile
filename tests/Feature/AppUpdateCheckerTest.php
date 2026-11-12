@@ -144,6 +144,38 @@ class AppUpdateCheckerTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_an_installed_update_is_not_offered_again_from_the_cache(): void
+    {
+        // Chequeo con la versión vieja: hay una 50 disponible.
+        config(['nativephp.version_code' => 10]);
+        $this->fakeManifest();
+        $this->assertSame(AppUpdateChecker::STATE_OPTIONAL, (new AppUpdateChecker)->status()['state']);
+
+        // El usuario instala la 50: el código instalado cambia, el cache no.
+        config(['nativephp.version_code' => 50]);
+
+        $status = (new AppUpdateChecker)->status();
+
+        $this->assertSame(AppUpdateChecker::STATE_UP_TO_DATE, $status['state']);
+        $this->assertNull($status['message']);
+        Http::assertSentCount(1); // sigue viniendo del cache, sin red
+    }
+
+    public function test_a_cached_minimum_still_forces_an_update(): void
+    {
+        config(['nativephp.version_code' => 10]);
+        $this->fakeManifest(['version_code' => 50, 'min_version_code' => 48]);
+        (new AppUpdateChecker)->status();
+
+        // Sube a una versión que igual queda por debajo del mínimo publicado.
+        config(['nativephp.version_code' => 45]);
+
+        $status = (new AppUpdateChecker)->status();
+
+        $this->assertSame(AppUpdateChecker::STATE_REQUIRED, $status['state']);
+        $this->assertSame(48, $status['min_version_code']);
+    }
+
     public function test_switching_channel_fetches_the_other_manifest(): void
     {
         config(['nativephp.version_code' => 10]);

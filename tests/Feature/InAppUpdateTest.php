@@ -102,6 +102,24 @@ class InAppUpdateTest extends TestCase
             ->assertSet('downloadProgress', 42);
     }
 
+    public function test_progress_is_shown_once_while_downloading(): void
+    {
+        config(['nativephp.version_code' => 10]);
+        $this->fakeManifest();
+
+        Native::fakeBridge()
+            ->withApkUpdaterDownloaded(id: '7')
+            ->withApkUpdaterStatus(status: 'running', progress: 42, id: '7');
+
+        // La fila con el spinner muestra el progreso; el mensaje queda vacío
+        // para no pintar un segundo contador debajo del botón.
+        Native::test(Profile::class, platform: 'android')
+            ->call('downloadUpdate')
+            ->call('pollDownload')
+            ->assertSet('downloadProgress', 42)
+            ->assertSet('downloadMessage', null);
+    }
+
     public function test_without_the_install_permission_it_opens_the_settings(): void
     {
         config(['nativephp.version_code' => 10]);

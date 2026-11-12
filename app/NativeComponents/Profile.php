@@ -229,7 +229,9 @@ final class Profile extends NativeComponent
         $this->downloadId = $result['id'] ?? null;
         $this->downloadStatus = 'running';
         $this->downloadProgress = 0;
-        $this->downloadMessage = __('app.updates.downloading', ['progress' => 0]);
+        // El progreso vive en la fila con el spinner; el mensaje queda para
+        // avisos y errores. Duplicarlo mostraba dos contadores.
+        $this->downloadMessage = null;
     }
 
     /**
@@ -263,7 +265,7 @@ final class Profile extends NativeComponent
             'successful' => $this->installDownloadedUpdate(),
             'failed' => $this->downloadMessage = __('app.updates.download_failed'),
             'paused' => $this->downloadMessage = __('app.updates.paused'),
-            default => $this->downloadMessage = __('app.updates.downloading', ['progress' => $this->downloadProgress]),
+            default => $this->downloadMessage = null,
         };
     }
 
