@@ -62,8 +62,12 @@ class AppearanceTest extends TestCase
     {
         (new AppearanceService)->apply('light');
 
+        // Las dos paletas quedan claras: el store del dispositivo nunca recibe un
+        // bloque vacío.
         $this->assertSame($this->palette('light', 'primary'), Theme::get('dark.primary'));
+        $this->assertSame($this->palette('light', 'primary'), Theme::get('light.primary'));
         $this->assertSame($this->palette('light', 'background'), Theme::get('dark.background'));
+        $this->assertSame($this->palette('light', 'background'), Theme::get('light.background'));
     }
 
     public function test_forcing_dark_paints_the_light_palette_with_dark_tokens(): void
@@ -71,6 +75,8 @@ class AppearanceTest extends TestCase
         (new AppearanceService)->apply('dark');
 
         $this->assertSame($this->palette('dark', 'primary'), Theme::get('light.primary'));
+        $this->assertSame($this->palette('dark', 'primary'), Theme::get('dark.primary'));
+        $this->assertSame($this->palette('dark', 'background'), Theme::get('dark.background'));
     }
 
     public function test_going_back_to_system_restores_both_palettes(): void

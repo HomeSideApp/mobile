@@ -99,13 +99,13 @@ final class AppearanceService
             return;
         }
 
+        // Las DOS paletas viajan siempre. Empujar sólo el bloque que se quiere
+        // forzar deja el otro vacío en el store del dispositivo, que cae a su
+        // paleta de respaldo: el chrome (que sí lee la config en PHP) cambiaba y
+        // el cuerpo no.
         match ($chosen) {
-            // Forzar claro: el bloque oscuro pasa a usar la paleta clara.
-            'light' => Theme::merge(['dark' => $light]),
-            'dark' => Theme::merge(['light' => $dark]),
-            // Volver a "sistema" reescribe las dos paletas configuradas: `reset()`
-            // limpia el estado local pero no lo empuja al dispositivo, así que la
-            // paleta forzada anterior se quedaba puesta.
+            'light' => Theme::merge(['light' => $light, 'dark' => $light]),
+            'dark' => Theme::merge(['light' => $dark, 'dark' => $dark]),
             default => Theme::merge(['light' => $light, 'dark' => $dark]),
         };
     }
