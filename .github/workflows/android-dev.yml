@@ -151,7 +151,11 @@ jobs:
         run: php artisan test --compact
 
   build:
-    name: APK (${{ github.ref_type == 'tag' && 'estable' || 'desarrollo' }})
+    # Nombre estático a propósito: en un job *skipped* GitHub no evalúa las
+    # expresiones del `name:` y el run lista el texto crudo
+    # (`APK (${{ ... }})`), que parece un error de configuración. El canal se
+    # informa en el resumen y en el nombre del release.
+    name: APK
     needs: [tests, changes]
     if: >-
       !cancelled() && needs.tests.result == 'success' &&
