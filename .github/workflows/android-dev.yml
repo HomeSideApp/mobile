@@ -309,14 +309,36 @@ jobs:
 
       - name: Nombre del artifact y manifiesto
         id: artifact
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
           set -euo pipefail
 
+          # `native:package` incrementa NATIVEPHP_APP_VERSION_CODE en .env antes
+          # de compilar (exige un build number mayor en cada subida a la tienda).
+          # El manifiesto tiene que describir el APK que salió, no el número que
+          # le pedimos: si publicamos el de entrada, la app queda siempre un
+          # build adelante de lo publicado y nunca ve una actualización.
+          VERSION="$(grep -E '^NATIVEPHP_APP_VERSION=' .env | cut -d= -f2-)"
+          VERSION_CODE="$(grep -E '^NATIVEPHP_APP_VERSION_CODE=' .env | cut -d= -f2-)"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+
           APK="dist/homeside-${VERSION}.apk"
           mv dist/app-release.apk "$APK"
+
+          # Guarda: leer el `.env` que quedó *dentro* del APK. Es el valor que la
+          # app va a comparar, y el que se desincronizó cuando confiábamos en el
+          # número de entrada.
+          bundle_zip="$(mktemp -d)/bundle.zip"
+          unzip -p "$APK" assets/laravel_bundle.zip > "$bundle_zip"
+          apk_version_code="$(unzip -p "$bundle_zip" .env | grep -E '^NATIVEPHP_APP_VERSION_CODE=' | cut -d= -f2- | tr -d '\r')"
+
+          if [ "${apk_version_code}" != "${VERSION_CODE}" ]; then
+            echo "::error::El manifiesto diría ${VERSION_CODE} pero el APK lleva ${apk_version_code}. No se publica."
+            exit 1
+          fi
+
+          echo "El APK lleva version_code=${apk_version_code}, igual que el manifiesto."
 
           if [ "${CHANNEL}" = "dev" ]; then
             # Nombre estable para humanos; el manifiesto apunta acá.
@@ -360,13 +382,13 @@ jobs:
           # dev → release rodante `dev-latest` (prerelease, no compite por "latest")
           # stable → release del tag, marcado como latest
           tag_name: ${{ env.CHANNEL == 'dev' && 'dev-latest' || github.ref_name }}
-          name: ${{ env.CHANNEL == 'dev' && 'HomeSide dev (última de develop)' || format('HomeSide {0}', steps.version.outputs.version) }}
+          name: ${{ env.CHANNEL == 'dev' && 'HomeSide dev (última de develop)' || format('HomeSide {0}', steps.artifact.outputs.version) }}
           prerelease: ${{ env.CHANNEL == 'dev' }}
           make_latest: ${{ env.CHANNEL == 'stable' }}
           fail_on_unmatched_files: true
           body: |
             Canal: `${{ env.CHANNEL }}`
-            Versión: `${{ steps.version.outputs.version }}` (code `${{ steps.version.outputs.version_code }}`)
+            Versión: `${{ steps.artifact.outputs.version }}` (code `${{ steps.artifact.outputs.version_code }}`)
             Keystore: `${{ steps.keystore.outputs.source }}`
             Commit: `${{ github.sha }}` por @${{ github.actor }}
             sha256: `${{ steps.artifact.outputs.sha256 }}`
@@ -385,7 +407,7 @@ jobs:
             echo ""
             echo "| | |"
             echo "| --- | --- |"
-            echo "| versión | \`${{ steps.version.outputs.version }}\` (code \`${{ steps.version.outputs.version_code }}\`) |"
+            echo "| versión | \`${{ steps.artifact.outputs.version }}\` (code \`${{ steps.artifact.outputs.version_code }}\`) |"
             echo "| canal | \`${{ env.CHANNEL }}\` |"
             echo "| keystore | \`${{ steps.keystore.outputs.source }}\` |"
             echo "| descarga | ${{ steps.artifact.outputs.url }} |"

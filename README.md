@@ -153,6 +153,13 @@ Versionado:
 `version_code` sale de `run_number` para que **siempre suba**: Android lo usa
 para aceptar la instalación encima de la anterior y la app para comparar.
 
+> **Ojo con `native:package`**: incrementa `NATIVEPHP_APP_VERSION_CODE` en `.env`
+> antes de compilar (las tiendas exigen un build number mayor en cada subida).
+> Por eso el manifiesto se genera leyendo el `.env` que quedó **dentro del APK**,
+> no el número que le pedimos, y el CI falla si no coinciden. Con el número de
+> entrada, la app quedaba un build por delante de lo publicado y nunca veía una
+> actualización.
+
 Manifiestos (assets del release, no la API de GitHub — sin token limita a 60
 requests/hora por IP):
 
