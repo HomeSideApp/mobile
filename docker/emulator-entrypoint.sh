@@ -8,6 +8,20 @@
 #
 set -euo pipefail
 
+# Sin acceso a /dev/kvm el emulador arranca sin aceleración y muere con un
+# "no permissions to use KVM" que no explica nada. Mejor fallar acá.
+if [ ! -e /dev/kvm ]; then
+  echo "Falta /dev/kvm dentro del contenedor: el host no expone la virtualización." >&2
+  exit 1
+fi
+
+if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+  echo "El contenedor no tiene permiso sobre /dev/kvm." >&2
+  echo "GID real: $(stat -c '%g' /dev/kvm) · KVM_GID recibido: ${KVM_GID:-sin definir}" >&2
+  echo "Corré 'make emulator-up': detecta el GID y lo exporta." >&2
+  exit 1
+fi
+
 AVD_NAME="${AVD_NAME:-homeside}"
 MEMORY="${EMULATOR_MEMORY:-2048}"
 CORES="${EMULATOR_CORES:-2}"

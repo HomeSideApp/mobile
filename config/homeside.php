@@ -37,6 +37,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Peso máximo de una foto antes de subirla
+    |--------------------------------------------------------------------------
+    |
+    | Tiene que coincidir con la regla de la API (`UpdateListItemRequest`,
+    | hoy 12 MB). El servidor reduce y convierte la foto a WebP de 1024 px
+    | después de recibirla, así que este tope sólo evita gastar datos en un
+    | envío que la API va a rechazar. El PHP del dispositivo no trae GD
+    | (compilado con `--disable-gd`): no se puede redimensionar en la app.
+    |
+    */
+
+    'image_upload_max_kb' => (int) env('HOMESIDE_IMAGE_MAX_KB', 12288),
+
+    /*
+    |--------------------------------------------------------------------------
     | Actualizaciones de la app (APK)
     |--------------------------------------------------------------------------
     |

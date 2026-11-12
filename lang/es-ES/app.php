@@ -117,6 +117,7 @@ return [
         'change_photo' => 'Cambiar foto',
         'photo_hint' => 'Todavía no hay foto.',
         'photo_failed' => 'No pudimos leer la foto elegida.',
+        'photo_too_large' => 'La foto pesa más de :mb MB. Probá con otra o recortala antes.',
         'uploading' => 'Subiendo foto…',
         'photo_uploaded' => 'Foto actualizada.',
         'category' => 'Categoría',

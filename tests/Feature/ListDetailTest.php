@@ -122,6 +122,28 @@ class ListDetailTest extends TestCase
         $this->assertSame('https://homeside.cloud/icons/webp/milk.webp', $pending[0]['icon_url']);
     }
 
+    public function test_a_photo_over_the_api_limit_is_rejected_before_uploading(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
+        file_put_contents($path, str_repeat('x', 13 * 1024 * 1024));
+
+        $screen = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $screen->call('openItem', 'item-1');
+
+        // El guardado del ítem es lo único que podría llegar al servidor.
+        Http::fake(['*' => Http::response(['data' => ['id' => 'item-1']])]);
+
+        $screen->call('onMediaSelected', true, [['path' => $path, 'extension' => 'jpg']]);
+
+        $this->assertStringContainsString('12 MB', (string) $screen->get('itemError'));
+        $this->assertSame('failed', $screen->get('uploadState'));
+
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/items/item-1'));
+    }
+
     public function test_toggling_an_item_flips_it_on_the_server(): void
     {
         $this->connect();

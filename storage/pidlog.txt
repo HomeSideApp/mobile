@@ -1,0 +1,80 @@
+11-12 18:18:00.607  2947  2947 I Choreographer: Skipped 31 frames!  The application may be doing too much work on its main thread.
+11-12 18:18:01.127  2947  2982 D EGL_emulation: app_time_stats: avg=139.97ms min=80.08ms max=263.24ms count=5
+11-12 18:18:02.161  2947  2982 D EGL_emulation: app_time_stats: avg=147.70ms min=115.86ms max=186.71ms count=7
+11-12 18:18:03.196  2947  2982 D EGL_emulation: app_time_stats: avg=116.22ms min=75.11ms max=168.39ms count=8
+11-12 18:18:04.320  2947  2982 D EGL_emulation: app_time_stats: avg=93.68ms min=50.20ms max=151.99ms count=10
+11-12 18:18:05.390  2947  2982 D EGL_emulation: app_time_stats: avg=106.12ms min=69.20ms max=176.64ms count=8
+11-12 18:18:06.500  2947  2982 D EGL_emulation: app_time_stats: avg=98.68ms min=60.74ms max=153.03ms count=8
+11-12 18:18:07.577  2947  2982 D EGL_emulation: app_time_stats: avg=127.04ms min=92.42ms max=180.72ms count=8
+11-12 18:18:08.606  2947  2982 D EGL_emulation: app_time_stats: avg=107.83ms min=44.18ms max=210.73ms count=8
+11-12 18:18:09.783  2947  2982 D EGL_emulation: app_time_stats: avg=123.25ms min=51.89ms max=216.80ms count=9
+11-12 18:18:10.803  2947  2982 D EGL_emulation: app_time_stats: avg=148.65ms min=97.99ms max=250.77ms count=6
+11-12 18:18:11.576  2947  3027 I NativePHP: NativePHP module shutting down
+11-12 18:18:11.588  2947  3027 I PHP-Native: runArtisanCommand: config:cache
+11-12 18:18:11.598  2947  3027 I NativePHP: NativePHP module initializing
+11-12 18:18:11.621  2947  3027 I PHP-Native: SAPI header: X-Powered-By
+11-12 18:18:11.904  2947  2982 D EGL_emulation: app_time_stats: avg=109.36ms min=53.36ms max=171.67ms count=9
+11-12 18:18:12.914  2947  2982 D EGL_emulation: app_time_stats: avg=99.34ms min=45.75ms max=190.99ms count=10
+11-12 18:18:13.914  2947  2982 D EGL_emulation: app_time_stats: avg=90.23ms min=70.76ms max=124.90ms count=8
+11-12 18:18:14.990  2947  2982 D EGL_emulation: app_time_stats: avg=98.73ms min=65.16ms max=150.36ms count=9
+11-12 18:18:15.998  2947  2982 D EGL_emulation: app_time_stats: avg=114.12ms min=79.42ms max=162.75ms count=7
+11-12 18:18:17.027  2947  2982 D EGL_emulation: app_time_stats: avg=122.07ms min=63.93ms max=226.61ms count=7
+11-12 18:18:18.123  2947  2982 D EGL_emulation: app_time_stats: avg=108.19ms min=75.42ms max=166.22ms count=8
+11-12 18:18:19.327  2947  2982 D EGL_emulation: app_time_stats: avg=111.38ms min=65.56ms max=244.78ms count=8
+11-12 18:18:20.415  2947  2982 D EGL_emulation: app_time_stats: avg=137.32ms min=31.53ms max=225.00ms count=7
+11-12 18:18:21.456  2947  2982 D EGL_emulation: app_time_stats: avg=93.47ms min=72.04ms max=155.41ms count=9
+11-12 18:18:21.999  2947  3027 I NativePHP: nativephp_call() called with method: Perf.SetFpsOverlayEnabled
+11-12 18:18:22.468  2947  2982 D EGL_emulation: app_time_stats: avg=93.23ms min=37.08ms max=181.58ms count=9
+11-12 18:18:22.474  2947  3027 I NativePHP: nativephp_call() called with method: NativeUI.Theme.Set
+11-12 18:18:23.556  2947  2982 D EGL_emulation: app_time_stats: avg=130.26ms min=77.67ms max=194.20ms count=7
+11-12 18:18:24.724  2947  2982 D EGL_emulation: app_time_stats: avg=132.72ms min=74.36ms max=189.05ms count=8
+11-12 18:18:25.154  2947  3027 I NativePHP: nativephp_call() called with method: NativeUI.Theme.Set
+11-12 18:18:25.748  2947  2982 D EGL_emulation: app_time_stats: avg=109.90ms min=64.14ms max=155.21ms count=8
+11-12 18:18:26.845  2947  2982 D EGL_emulation: app_time_stats: avg=115.40ms min=67.56ms max=188.17ms count=8
+11-12 18:18:27.909  2947  2982 D EGL_emulation: app_time_stats: avg=98.96ms min=50.78ms max=206.08ms count=9
+11-12 18:18:28.943  2947  2982 D EGL_emulation: app_time_stats: avg=109.19ms min=65.69ms max=208.29ms count=8
+11-12 18:18:30.014  2947  2982 D EGL_emulation: app_time_stats: avg=102.52ms min=35.26ms max=164.36ms count=9
+11-12 18:18:31.128  2947  2982 D EGL_emulation: app_time_stats: avg=97.71ms min=57.70ms max=136.13ms count=11
+11-12 18:18:32.191  2947  2982 D EGL_emulation: app_time_stats: avg=117.87ms min=64.65ms max=200.64ms count=8
+11-12 18:18:32.483  2947  3027 I NativePHP: nativephp_call() called with method: Perf.SetFpsOverlayEnabled
+11-12 18:18:32.489  2947  3027 I NativePHP: nativephp_call() called with method: NativeUI.Theme.Set
+11-12 18:18:32.508  2947  3027 I NativePHP: nativephp_call() called with method: NativeUI.Theme.Set
+11-12 18:18:32.890  2947  3027 I NativePHP: NativePHP module shutting down
+11-12 18:18:32.905  2947  3027 I PHP-Native: runArtisanCommand: event:cache
+11-12 18:18:32.918  2947  3027 I NativePHP: NativePHP module initializing
+11-12 18:18:32.936  2947  3027 I PHP-Native: SAPI header: X-Powered-By
+11-12 18:18:33.261  2947  2982 D EGL_emulation: app_time_stats: avg=110.46ms min=57.46ms max=192.14ms count=9
+11-12 18:18:34.343  2947  2982 D EGL_emulation: app_time_stats: avg=90.71ms min=37.44ms max=152.82ms count=9
+11-12 18:18:35.361  2947  2982 D EGL_emulation: app_time_stats: avg=111.26ms min=54.27ms max=192.04ms count=8
+11-12 18:18:36.467  2947  2982 D EGL_emulation: app_time_stats: avg=89.84ms min=49.54ms max=166.15ms count=9
+11-12 18:18:37.517  2947  2982 D EGL_emulation: app_time_stats: avg=92.14ms min=54.97ms max=128.57ms count=9
+11-12 18:18:38.551  2947  2982 D EGL_emulation: app_time_stats: avg=114.18ms min=57.46ms max=176.73ms count=9
+11-12 18:18:39.566  2947  2982 D EGL_emulation: app_time_stats: avg=101.59ms min=56.25ms max=168.31ms count=8
+11-12 18:18:40.639  2947  2982 D EGL_emulation: app_time_stats: avg=98.26ms min=72.85ms max=181.01ms count=9
+11-12 18:18:41.667  2947  2982 D EGL_emulation: app_time_stats: avg=101.30ms min=54.07ms max=160.74ms count=8
+11-12 18:18:42.760  2947  2982 D EGL_emulation: app_time_stats: avg=131.18ms min=53.29ms max=258.95ms count=7
+11-12 18:18:43.099  2947  3027 I NativePHP: nativephp_call() called with method: Perf.SetFpsOverlayEnabled
+11-12 18:18:43.900  2947  2982 D EGL_emulation: app_time_stats: avg=99.63ms min=50.40ms max=147.97ms count=10
+11-12 18:18:44.937  2947  3027 I NativePHP: nativephp_call() called with method: NativeUI.Theme.Set
+11-12 18:18:45.153  2947  2982 D EGL_emulation: app_time_stats: avg=113.87ms min=79.94ms max=190.46ms count=8
+11-12 18:18:45.522  2947  2971 I ud.homeside.app: Background concurrent mark compact GC freed 4740KB AllocSpace bytes, 4(160KB) LOS objects, 49% free, 3472KB/6945KB, paused 125us,991us total 254.972ms
+11-12 18:18:46.187  2947  2982 D EGL_emulation: app_time_stats: avg=128.98ms min=97.18ms max=215.77ms count=5
+11-12 18:18:47.024  2947  3027 I NativePHP: nativephp_call() called with method: NativeUI.Theme.Set
+11-12 18:18:47.453  2947  2982 D EGL_emulation: app_time_stats: avg=133.91ms min=74.04ms max=354.24ms count=8
+11-12 18:18:48.517  2947  2982 D EGL_emulation: app_time_stats: avg=151.76ms min=42.78ms max=286.79ms count=7
+11-12 18:18:49.606  2947  2982 D EGL_emulation: app_time_stats: avg=147.93ms min=60.76ms max=261.81ms count=7
+11-12 18:18:50.620  2947  2982 D EGL_emulation: app_time_stats: avg=127.85ms min=58.17ms max=225.63ms count=7
+11-12 18:18:51.680  2947  2982 D EGL_emulation: app_time_stats: avg=121.84ms min=61.87ms max=165.89ms count=7
+11-12 18:18:52.756  2947  2982 D EGL_emulation: app_time_stats: avg=145.41ms min=72.10ms max=207.02ms count=7
+11-12 18:18:53.834  2947  2982 D EGL_emulation: app_time_stats: avg=91.53ms min=45.76ms max=148.97ms count=11
+11-12 18:18:54.856  2947  2982 D EGL_emulation: app_time_stats: avg=101.58ms min=34.06ms max=156.87ms count=10
+11-12 18:18:55.927  2947  2982 D EGL_emulation: app_time_stats: avg=83.02ms min=61.06ms max=107.22ms count=12
+11-12 18:18:55.979  2947  3027 I NativePHP: NativePHP module shutting down
+11-12 18:18:56.021  2947  3027 I PHP-Native: runArtisanCommand: view:cache
+11-12 18:18:56.190  2947  3027 I NativePHP: NativePHP module initializing
+11-12 18:18:56.539  2947  3027 I PHP-Native: SAPI header: X-Powered-By
+11-12 18:18:56.963  2947  2982 D EGL_emulation: app_time_stats: avg=80.97ms min=47.07ms max=158.37ms count=10
+11-12 18:18:58.127  2947  2982 D EGL_emulation: app_time_stats: avg=111.30ms min=49.01ms max=197.31ms count=10
+11-12 18:18:59.132  2947  2982 D EGL_emulation: app_time_stats: avg=86.40ms min=61.38ms max=135.25ms count=9
+11-12 18:19:00.248  2947  2982 D EGL_emulation: app_time_stats: avg=74.96ms min=36.85ms max=145.06ms count=12
+11-12 18:19:01.351  2947  2982 D EGL_emulation: app_time_stats: avg=104.17ms min=56.42ms max=169.97ms count=10

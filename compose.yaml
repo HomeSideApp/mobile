@@ -58,7 +58,11 @@ services:
     # El nodo /dev/kvm conserva el GID del host; se agrega como grupo
     # suplementario para que el usuario `dev` pueda abrirlo.
     group_add:
-      - "${KVM_GID:-986}"
+      # El GID de /dev/kvm cambia entre máquinas (991 acá, 986 en otra): un
+      # default fijo hacía que el emulador muriera con "no permissions to use
+      # KVM". El Makefile lo detecta y lo exporta; si corrés `docker compose`
+      # directo, definí KVM_GID. El entrypoint avisa si no coincide.
+      - "${KVM_GID:-0}"
     environment:
       HOME: /home/dev
       ANDROID_HOME: /opt/android-sdk

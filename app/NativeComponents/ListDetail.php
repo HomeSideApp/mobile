@@ -707,6 +707,23 @@ final class ListDetail extends NativeComponent
         $this->draftImageUrl = 'file://'.$path;
         $this->uploadState = 'uploading';
 
+        // Fotos de móvil: 3-10 MB es normal y la API acepta hasta
+        // `homeside.image_upload_max_kb`. Rechazar antes de leer y enviar
+        // ahorra subir decenas de megas para nada.
+        $limitKb = (int) config('homeside.image_upload_max_kb', 12288);
+        $size = @filesize($path);
+
+        if ($limitKb > 0 && is_int($size) && $size > $limitKb * 1024) {
+            $this->draftImageUrl = $this->previousImageUrl;
+            $this->uploadState = 'failed';
+            $this->itemNotice = null;
+            $this->itemError = __('app.list_detail.photo_too_large', [
+                'mb' => round($limitKb / 1024),
+            ]);
+
+            return;
+        }
+
         $contents = @file_get_contents($path);
 
         if (! is_string($contents) || $contents === '') {

@@ -117,6 +117,7 @@ return [
         'change_photo' => 'Change photo',
         'photo_hint' => 'No photo yet.',
         'photo_failed' => 'We could not read the chosen photo.',
+        'photo_too_large' => 'That photo is larger than :mb MB. Try another one or crop it first.',
         'uploading' => 'Uploading photo…',
         'photo_uploaded' => 'Photo updated.',
         'category' => 'Category',

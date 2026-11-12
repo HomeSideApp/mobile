@@ -1,0 +1,14 @@
+11-12 18:19:27.822  2947  3063 D LaravelEnvironment: ✅ Laravel already up to date (id 0.1.0b33)
+11-12 18:19:27.841  2947  3063 D LaravelEnvironment: ✅ Environment variables configured
+11-12 18:19:27.842  2947  3063 D LaravelEnvironment: PHP session path set to: /data/user/0/cloud.homeside.app/app_storage/php_sessions
+11-12 18:19:27.842  2947  3063 D LaravelEnvironment: 🔍 Certificate copy - DEBUG mode: false
+11-12 18:19:27.843  2947  3063 D LaravelEnvironment: 📋 Asset cacert.pem present — skipping (no forced refresh)
+11-12 18:19:27.843  2947  3063 D LaravelEnvironment: ✅ PHP ini configured with certificate path
+11-12 18:19:27.843  2947  3063 D LaravelEnvironment: ⚡ Skipping artisan commands — no extraction needed
+11-12 18:19:27.844  2947  3063 D LaravelInit: Laravel environment ready
+11-12 18:19:27.844  2947  3063 D LaravelInit: Runtime mode: persistent
+11-12 18:19:27.872  2947  4405 I PHP-Native: PHP bridge initialized
+11-12 18:19:27.875  2947  4405 I PHPBridge: PHP runtime initialized (persistent)
+11-12 18:19:27.884  2947  4405 I PHP-Native: persistent_boot: initializing with bootstrap=/data/user/0/cloud.homeside.app/app_storage/laravel/vendor/nativephp/mobile/bootstrap/android/persistent.php
+11-12 18:19:27.970  2947  4405 I NativePHP: NativePHP module initializing
+11-12 18:19:27.994  2947  4405 I PHP-Native: SAPI header: X-Powered-By
