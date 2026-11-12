@@ -6,6 +6,7 @@ use App\NativeComponents\ListDetail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Native\Mobile\Events\Gallery\MediaSelected;
+use Native\Mobile\System;
 use Native\Mobile\Testing\Native;
 use Tests\Concerns\InteractsWithHomeside;
 use Tests\TestCase;
@@ -438,6 +439,25 @@ class ListDetailTest extends TestCase
             // La nota llega precargada: es la variedad, el detalle que se
             // necesita ver antes de tocar la cantidad.
             ->assertSet('draftNotes', 'Sin sal');
+    }
+
+    public function test_the_catalog_icons_are_tinted_in_dark_mode(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        System::rememberAppearance('dark');
+        $dark = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        System::rememberAppearance('light');
+        $light = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        // Los WebP del catálogo son a color: en oscuro se tiñen al texto, en
+        // claro se dejan como están.
+        $this->assertSame('#F4F1E8', $dark->get('iconTint'));
+        $this->assertNull($light->get('iconTint'));
+
+        System::rememberAppearance('light');
     }
 
     public function test_the_icon_picker_replaces_the_form_and_comes_back(): void

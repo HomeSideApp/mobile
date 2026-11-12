@@ -337,7 +337,12 @@
                                 :class="$draftIcon === $icon['name'] ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
                                 @press="selectIcon({{ json_encode($icon['name']) }})"
                             >
-                                <native:image :src="$icon['url']" class="h-[26] w-[26]" fit="contain" />
+                                <native:image
+                                    :src="$icon['url']"
+                                    :tint-color="$iconTint"
+                                    class="h-[26] w-[26]"
+                                    fit="contain"
+                                />
                             </native:pressable>
                         @endforeach
                     </native:row>

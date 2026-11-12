@@ -98,6 +98,13 @@ final class ListDetail extends NativeComponent
 
     public bool $iconPickerOpen = false;
 
+    /**
+     * Los íconos del catálogo son WebP a color: sobre una superficie oscura se
+     * pierden. En modo oscuro se tiñen al color del texto; en claro se dejan
+     * como están.
+     */
+    public ?string $iconTint = null;
+
     /** @var list<string> Nombres para el select de categoría. */
     public array $categoryOptions = [];
 
@@ -148,6 +155,10 @@ final class ListDetail extends NativeComponent
 
     public function load(): void
     {
+        // La apariencia puede haber cambiado desde Perfil (o desde el sistema):
+        // se recalcula en cada carga.
+        $this->refreshIconTint();
+
         if ($this->listId === null || $this->listId === '') {
             $this->loading = false;
             $this->error = __('app.list_detail.not_found');
@@ -198,6 +209,11 @@ final class ListDetail extends NativeComponent
         $this->loadStores();
 
         $this->loading = false;
+    }
+
+    private function refreshIconTint(): void
+    {
+        $this->iconTint = isDark() ? (string) theme('on-surface', '#F4F1E8') : null;
     }
 
     private function loadStores(): void
