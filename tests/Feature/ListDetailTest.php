@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\NativeComponents\ListDetail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Native\Mobile\Events\Gallery\MediaSelected;
 use Native\Mobile\Testing\Native;
 use Tests\Concerns\InteractsWithHomeside;
 use Tests\TestCase;
@@ -245,6 +246,47 @@ class ListDetailTest extends TestCase
             ->assertSet('itemError', null);
 
         Native::fakeBridge()->assertCalled('Camera.PickMedia');
+    }
+
+    public function test_a_picked_photo_is_uploaded_to_the_item(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
+        file_put_contents($path, "\xFF\xD8\xFF".str_repeat('a', 32));
+
+        Http::fake([
+            '*/api/v1/lists/list-1/items/item-1' => Http::response(['data' => ['id' => 'item-1']]),
+            '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
+            '*/api/v1/categories*' => Http::response(['data' => []]),
+            '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
+        ]);
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            // El listener recibe los campos del evento por nombre.
+            ->emitNative(MediaSelected::class, ['success' => true, 'files' => [$path], 'count' => 1]);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/lists/list-1/items/item-1')
+            && $request->hasFile('image_url'));
+
+        @unlink($path);
+    }
+
+    public function test_a_cancelled_pick_uploads_nothing(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->emitNative(MediaSelected::class, ['success' => false, 'cancelled' => true, 'files' => []]);
+
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'POST'
+            && str_contains($request->url(), '/items/item-1'));
     }
 
     public function test_the_household_route_uses_the_household_prefix(): void

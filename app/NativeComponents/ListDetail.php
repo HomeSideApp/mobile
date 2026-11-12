@@ -611,14 +611,19 @@ final class ListDetail extends NativeComponent
         }
     }
 
+    /**
+     * El listener de un evento nativo recibe los campos del payload por
+     * nombre, no el objeto del evento: pedir `MediaSelected $event` hace que el
+     * contenedor intente construirlo y falle con "unresolvable dependency".
+     */
     #[On(MediaSelected::class)]
-    public function onMediaSelected(MediaSelected $event): void
+    public function onMediaSelected(bool $success = false, array $files = []): void
     {
-        if (! $event->success || $event->files === [] || $this->listId === null || $this->openItemId === null) {
+        if (! $success || $files === [] || $this->listId === null || $this->openItemId === null) {
             return;
         }
 
-        $path = $event->files[0];
+        $path = $files[0];
         $contents = @file_get_contents($path);
 
         if (! is_string($contents) || $contents === '') {
