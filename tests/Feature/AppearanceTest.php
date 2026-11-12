@@ -77,6 +77,22 @@ class AppearanceTest extends TestCase
         $this->assertArrayNotHasKey('dark', $after, 'la paleta forzada no deja companion oscuro');
     }
 
+    public function test_the_middleware_reapplies_the_palette_after_the_providers_boot(): void
+    {
+        (new AppearanceService)->set('dark');
+
+        // Otro provider recarga la paleta original después del boot (el propio
+        // `mobile-ui` hace `Theme::load()` en el suyo). Sin el middleware, el
+        // cuerpo se parsea con estos valores y queda con el color viejo.
+        $file = require config_path('native-ui.php');
+        config(['native-ui.theme' => $file['theme']]);
+
+        $this->get('/profile')->assertOk();
+
+        $this->assertSame($this->palette('dark', 'background'), config('native-ui.theme.light.background'));
+        $this->assertSame($this->palette('dark', 'background'), config('native-ui.theme.dark.background'));
+    }
+
     public function test_a_selector_change_applies_immediately(): void
     {
         (new AppearanceService)->set('light');

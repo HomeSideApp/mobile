@@ -13,6 +13,7 @@ use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
 use Native\Mobile\Edge\TailwindParser;
 use Native\Mobile\Facades\Browser;
+use Native\Mobile\Facades\System;
 
 /**
  * Perfil: datos de la cuenta, servidor actual, cierre de sesión y cambio de
@@ -154,11 +155,27 @@ final class Profile extends NativeComponent
             ? TailwindParser::parse('bg-theme-background')
             : [];
 
+        $lightBg = is_string($parser['bg'] ?? null) ? $parser['bg'] : '—';
+        $darkBg = is_string($parser['dark']['bg'] ?? null) ? $parser['dark']['bg'] : $lightBg;
+
+        // El renderer elige el hex del companion `dark` cuando Android está en
+        // modo oscuro: es la variable que decide qué se ve, y sin ella un
+        // diagnóstico de color queda a medias.
+        $systemDark = false;
+
+        try {
+            $systemDark = System::isDarkMode();
+        } catch (\Throwable) {
+            // Sin bridge (tests, arranque sin runtime) no hay dato.
+        }
+
         return [
             ['label' => 'version', 'value' => (string) config('nativephp.version')],
             ['label' => 'appearance', 'value' => (new AppearanceService)->current()],
-            ['label' => 'body bg', 'value' => is_string($parser['bg'] ?? null) ? $parser['bg'] : '—'],
-            ['label' => 'body bg dark', 'value' => is_string($parser['dark']['bg'] ?? null) ? $parser['dark']['bg'] : '—'],
+            ['label' => 'system dark', 'value' => $systemDark ? 'yes' : 'no'],
+            ['label' => 'body bg', 'value' => $lightBg],
+            ['label' => 'body bg dark', 'value' => $darkBg],
+            ['label' => 'body bg used', 'value' => $systemDark ? $darkBg : $lightBg],
             ['label' => 'theme light bg', 'value' => (string) config('native-ui.theme.light.background')],
             ['label' => 'theme dark bg', 'value' => (string) config('native-ui.theme.dark.background')],
             ['label' => 'last merge', 'value' => AppearanceService::lastAppliedLabel()],
