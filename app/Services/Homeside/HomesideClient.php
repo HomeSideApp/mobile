@@ -90,6 +90,71 @@ final class HomesideClient
     }
 
     /**
+     * Sube un archivo a un endpoint que espera un campo de tipo `file`.
+     *
+     * Laravel sólo parsea multipart en POST, así que la mutación viaja como
+     * POST con `_method` para llegar al PUT de la ruta.
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    public function upload(string $path, string $contents, string $filename, array $extra = []): array
+    {
+        $url = $this->server->apiBase.'/'.ltrim($path, '/');
+
+        $request = Http::baseUrl($this->server->apiBase)
+            ->acceptJson()
+            ->timeout((int) config('homeside.timeout', 15))
+            ->withHeaders(['Accept-Language' => (string) config('homeside.locale', 'es-ES')])
+            ->attach('image_url', $contents, $filename);
+
+        if ($this->token !== null && $this->token !== '') {
+            $request = $request->withToken($this->token);
+        }
+
+        try {
+            $response = $request->post($url, ['_method' => 'PUT', ...$extra]);
+        } catch (ConnectionException $exception) {
+            throw HomesideException::network($this->connectionDetail($exception));
+        }
+
+        if ($response->successful()) {
+            $decoded = $response->json();
+
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        throw $this->exceptionFor($response);
+    }
+
+    /**
+     * Descarga binaria autenticada (imágenes servidas detrás de auth).
+     */
+    public function download(string $path): string
+    {
+        $url = $this->server->apiBase.'/'.ltrim($path, '/');
+
+        $request = Http::baseUrl($this->server->apiBase)
+            ->timeout((int) config('homeside.timeout', 15));
+
+        if ($this->token !== null && $this->token !== '') {
+            $request = $request->withToken($this->token);
+        }
+
+        try {
+            $response = $request->get($url);
+        } catch (ConnectionException $exception) {
+            throw HomesideException::network($this->connectionDetail($exception));
+        }
+
+        if (! $response->successful()) {
+            throw $this->exceptionFor($response);
+        }
+
+        return $response->body();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function delete(string $path): array

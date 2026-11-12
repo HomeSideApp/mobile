@@ -6,12 +6,118 @@
                 <native:column class="w-full items-center gap-3 rounded-lg bg-theme-surface-variant px-4 py-10">
                     <native:icon ios="lock.fill" android="lock" :size="28" class="text-theme-primary" />
                     <native:text class="text-base font-semibold text-theme-on-surface">{{ __('app.list_detail.needs_login') }}</native:text>
-                    <native:button :label="__('app.lists.needs_login')" class="w-full" @press="goToLogin" />
+                    <native:button :label="__('app.list_detail.needs_login')" class="w-full" @press="goToLogin" />
                 </native:column>
             @else
 
-                <native:button :label="__('app.list_detail.add')" icon="plus" class="w-full" @press="addItems" />
+                {{-- ── Acciones de la lista ─────────────────────────── --}}
+                <native:row class="w-full items-center gap-2">
+                    <native:pressable class="rounded-lg bg-theme-surface px-3 py-2" @press="toggleListActions">
+                        <native:row class="items-center gap-1">
+                            <native:icon ios="ellipsis" android="more_horiz" :size="18" class="text-theme-on-surface" />
+                            <native:text class="text-xs font-semibold text-theme-on-surface">{{ __('app.list_detail.actions') }}</native:text>
+                        </native:row>
+                    </native:pressable>
+                    <native:spacer />
+                    <native:text class="text-xs text-theme-on-surface-variant">
+                        {{ __('app.list_detail.pending_count', ['count' => count($pending)]) }}
+                    </native:text>
+                </native:row>
 
+                @if ($listActionsOpen)
+                    <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
+                        @if ($renaming)
+                            <native:outlined-text-input
+                                :label="__('app.list_detail.rename')"
+                                :value="$renameDraft"
+                                @change="renameDraft = $event"
+                                @submit="rename"
+                            />
+                            <native:row class="w-full gap-2">
+                                <native:button :label="__('app.common.cancel')" variant="secondary" class="flex-1" @press="cancelRenaming" />
+                                <native:button :label="__('app.common.save')" class="flex-1" @press="rename" />
+                            </native:row>
+                        @else
+                            <native:button :label="__('app.list_detail.rename')" variant="secondary" class="w-full" @press="startRenaming" />
+
+                            @if ($confirmDelete)
+                                <native:column class="w-full gap-2 rounded-lg border border-theme-destructive p-3">
+                                    <native:text class="text-sm font-semibold text-theme-destructive">
+                                        {{ __('app.list_detail.delete_confirm', ['name' => $name]) }}
+                                    </native:text>
+                                    <native:row class="w-full gap-2">
+                                        <native:button :label="__('app.common.cancel')" variant="secondary" class="flex-1" @press="cancelDelete" />
+                                        <native:button :label="__('app.list_detail.delete_list')" variant="destructive" class="flex-1" @press="deleteList" />
+                                    </native:row>
+                                </native:column>
+                            @else
+                                <native:button :label="__('app.list_detail.delete_list')" variant="ghost" class="w-full" @press="requestDelete" />
+                            @endif
+                        @endif
+                    </native:column>
+                @endif
+
+                {{-- ── Buscador ─────────────────────────────────────── --}}
+                <native:outlined-text-input
+                    :placeholder="__('app.list_detail.search_placeholder')"
+                    leading-icon="search"
+                    native:model.debounce.400ms="search"
+                    @change="onSearch"
+                />
+
+                @if ($searching)
+                    <native:row class="w-full items-center gap-2 py-2">
+                        <native:activity-indicator />
+                        <native:text class="text-sm text-theme-on-surface-variant">{{ __('app.picker.searching') }}</native:text>
+                    </native:row>
+                @endif
+
+                @if (count($results) > 0)
+                    @foreach (array_chunk($results, 2) as $row)
+                        <native:row class="w-full gap-2">
+                            @foreach ($row as $product)
+                                <native:pressable
+                                    :native:key="'res-'.$product['id']"
+                                    class="flex-1 items-center gap-2 rounded-lg p-3 bg-[{{ $product['color'] }}]"
+                                    @press="addProduct({{ json_encode($product['id']) }})"
+                                >
+                                    <native:row class="w-full items-center gap-2">
+                                        @if ($product['icon_url'] !== null)
+                                            <native:image :src="$product['icon_url']" class="h-[24] w-[24]" fit="contain" />
+                                        @endif
+                                        <native:column class="flex-1 gap-0.5">
+                                            <native:text class="text-[13px] font-semibold" :color="$product['color_text']" :max-lines="2">
+                                                {{ $product['name'] }}
+                                            </native:text>
+                                            @if ($product['category_name'] !== null)
+                                                <native:text class="text-[10px]" :color="$product['color_text']">{{ $product['category_name'] }}</native:text>
+                                            @endif
+                                        </native:column>
+                                    </native:row>
+                                </native:pressable>
+                            @endforeach
+
+                            @for ($filler = count($row); $filler < 2; $filler++)
+                                <native:column class="flex-1"></native:column>
+                            @endfor
+                        </native:row>
+                    @endforeach
+                @endif
+
+                @if (! $searching && $searchDone && count($results) === 0 && trim($search) !== '')
+                    <native:column class="w-full gap-2 rounded-lg bg-theme-surface-variant p-4">
+                        <native:text class="text-sm text-theme-on-surface-variant">
+                            {{ __('app.picker.empty', ['query' => trim($search)]) }}
+                        </native:text>
+                        <native:button
+                            :label="__('app.picker.create_and_add', ['query' => trim($search)])"
+                            class="w-full"
+                            @press="createAndAdd"
+                        />
+                    </native:column>
+                @endif
+
+                {{-- ── Pendientes ───────────────────────────────────── --}}
                 @if ($loading)
                     <native:row class="w-full items-center justify-center gap-2 py-6">
                         <native:activity-indicator />
@@ -20,9 +126,15 @@
                 @endif
 
                 @if (! $loading && count($pending) > 0)
-                    <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
-                        {{ __('app.list_detail.pending', ['count' => count($pending)]) }}
-                    </native:text>
+                    <native:row class="w-full items-center gap-2">
+                        <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                            {{ __('app.list_detail.pending', ['count' => count($pending)]) }}
+                        </native:text>
+                        <native:spacer />
+                        <native:text class="text-[10px] text-theme-on-surface-variant">
+                            {{ __('app.list_detail.pending_hint') }}
+                        </native:text>
+                    </native:row>
 
                     @foreach (array_chunk($pending, 3) as $row)
                         <native:row class="w-full gap-2">
@@ -33,7 +145,9 @@
                                     @press="toggle({{ json_encode($item['id']) }})"
                                     @longPress="openItem({{ json_encode($item['id']) }})"
                                 >
-                                    @if ($item['icon_url'] !== null)
+                                    @if ($item['image_url'] !== null)
+                                        <native:image :src="$item['image_url']" class="h-[30] w-[30] rounded-md" fit="cover" />
+                                    @elseif ($item['icon_url'] !== null)
                                         <native:image :src="$item['icon_url']" class="h-[26] w-[26]" fit="contain" />
                                     @else
                                         <native:text class="text-base font-bold" :color="$item['color_text']">
@@ -60,7 +174,7 @@
                     @endforeach
                 @endif
 
-                @if (! $loading && count($pending) === 0)
+                @if (! $loading && count($pending) === 0 && trim($search) === '')
                     <native:column class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant px-4 py-8">
                         <native:icon ios="checkmark.circle.fill" android="check_circle" :size="28" class="text-theme-success" />
                         <native:text class="text-base font-semibold text-theme-on-surface">{{ __('app.list_detail.nothing_pending') }}</native:text>
@@ -70,25 +184,25 @@
                     </native:column>
                 @endif
 
-                @if (count($checked) > 0)
+                {{-- ── Recientes ────────────────────────────────────── --}}
+                @if (count($recent) > 0 && trim($search) === '')
                     <native:text class="mt-2 text-xs font-semibold uppercase text-theme-on-surface-variant">
-                        {{ __('app.list_detail.checked', ['count' => count($checked)]) }}
+                        {{ __('app.picker.recent') }}
                     </native:text>
 
-                    @foreach (array_chunk($checked, 3) as $row)
+                    @foreach (array_chunk($recent, 3) as $row)
                         <native:row class="w-full gap-2">
-                            @foreach ($row as $item)
+                            @foreach ($row as $product)
                                 <native:pressable
-                                    :native:key="$item['id']"
-                                    class="h-[104] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $item['color'] }}]"
-                                    @press="toggle({{ json_encode($item['id']) }})"
-                                    @longPress="openItem({{ json_encode($item['id']) }})"
+                                    :native:key="'recent-'.$product['id']"
+                                    class="h-[92] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $product['color'] }}]"
+                                    @press="addProduct({{ json_encode($product['id']) }})"
                                 >
-                                    @if ($item['icon_url'] !== null)
-                                        <native:image :src="$item['icon_url']" class="h-[26] w-[26]" fit="contain" />
+                                    @if ($product['icon_url'] !== null)
+                                        <native:image :src="$product['icon_url']" class="h-[24] w-[24]" fit="contain" />
                                     @endif
-                                    <native:text class="mt-1 text-center text-[11px] font-medium line-through" :color="$item['color_text']" :max-lines="2">
-                                        {{ $item['name'] }}
+                                    <native:text class="mt-1 text-center text-[11px] font-medium" :color="$product['color_text']" :max-lines="2">
+                                        {{ $product['name'] }}
                                     </native:text>
                                 </native:pressable>
                             @endforeach
@@ -100,18 +214,66 @@
                     @endforeach
                 @endif
 
-                @if ($confirmDelete)
-                    <native:column class="mt-4 w-full gap-2 rounded-lg border border-theme-destructive p-4">
-                        <native:text class="text-sm font-semibold text-theme-destructive">
-                            {{ __('app.list_detail.delete_confirm', ['name' => $name]) }}
-                        </native:text>
-                        <native:row class="w-full gap-2">
-                            <native:button :label="__('app.common.cancel')" variant="secondary" class="flex-1" @press="cancelDelete" />
-                            <native:button :label="__('app.list_detail.delete_list')" variant="destructive" class="flex-1" @press="deleteList" />
-                        </native:row>
-                    </native:column>
-                @else
-                    <native:button :label="__('app.list_detail.delete_list')" variant="ghost" class="mt-4 w-full" @press="requestDelete" />
+                {{-- ── Categorías ───────────────────────────────────── --}}
+                @if (count($categories) > 0 && trim($search) === '')
+                    <native:text class="mt-2 text-xs font-semibold uppercase text-theme-on-surface-variant">
+                        {{ __('app.list_detail.categories') }}
+                    </native:text>
+
+                    @foreach ($categories as $category)
+                        <native:column :native:key="'cat-'.$category['id']" class="w-full overflow-hidden rounded-xl border border-theme-outline">
+                            <native:pressable
+                                class="w-full px-4 py-3 bg-[{{ $category['color'] }}]"
+                                @press="toggleCategory({{ json_encode($category['id']) }})"
+                            >
+                                <native:row class="w-full items-center gap-2">
+                                    <native:text class="flex-1 text-sm font-semibold" :color="\App\Support\CardColor::foreground($category['color'])">
+                                        {{ $category['name'] }}
+                                    </native:text>
+                                    <native:icon
+                                        :ios="$category['open'] ? 'chevron.up' : 'chevron.down'"
+                                        :android="$category['open'] ? 'expand_less' : 'expand_more'"
+                                        :size="16"
+                                        :color="\App\Support\CardColor::foreground($category['color'])"
+                                    />
+                                </native:row>
+                            </native:pressable>
+
+                            @if ($category['open'])
+                                @if (count($category['products']) === 0)
+                                    <native:row class="w-full items-center justify-center gap-2 p-4">
+                                        <native:activity-indicator />
+                                        <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.common.loading') }}</native:text>
+                                    </native:row>
+                                @else
+                                    <native:column class="w-full gap-2 p-2">
+                                        @foreach (array_chunk($category['products'], 3) as $row)
+                                            <native:row class="w-full gap-2">
+                                                @foreach ($row as $product)
+                                                    <native:pressable
+                                                        :native:key="'catprod-'.$product['id']"
+                                                        class="h-[92] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $product['color'] }}]"
+                                                        @press="addProduct({{ json_encode($product['id']) }})"
+                                                    >
+                                                        @if ($product['icon_url'] !== null)
+                                                            <native:image :src="$product['icon_url']" class="h-[24] w-[24]" fit="contain" />
+                                                        @endif
+                                                        <native:text class="mt-1 text-center text-[11px] font-medium" :color="$product['color_text']" :max-lines="2">
+                                                            {{ $product['name'] }}
+                                                        </native:text>
+                                                    </native:pressable>
+                                                @endforeach
+
+                                                @for ($filler = count($row); $filler < 3; $filler++)
+                                                    <native:column class="flex-1"></native:column>
+                                                @endfor
+                                            </native:row>
+                                        @endforeach
+                                    </native:column>
+                                @endif
+                            @endif
+                        </native:column>
+                    @endforeach
                 @endif
 
             @endif
@@ -125,9 +287,19 @@
         </native:column>
     </native:scroll-view>
 
-    <native:bottom-sheet :visible="$openItemId !== null" @dismiss="closeItem" detents="fit">
+    {{-- ── Hoja de detalle del ítem ──────────────────────────────────── --}}
+    <native:bottom-sheet :visible="$openItemId !== null" @dismiss="closeItem" detents="large">
         <native:column class="w-full gap-4 p-5">
+
             <native:text class="text-lg font-bold text-theme-on-background">{{ __('app.list_detail.edit_item') }}</native:text>
+
+            {{-- Foto --}}
+            <native:column class="w-full gap-2">
+                <native:button :label="__('app.list_detail.upload_photo')" variant="secondary" class="w-full" @press="pickPhoto" />
+                @if ($itemNotice)
+                    <native:text class="text-xs text-theme-on-surface-variant">{{ $itemNotice }}</native:text>
+                @endif
+            </native:column>
 
             <native:outlined-text-input
                 :label="__('app.list_detail.quantity')"
@@ -147,8 +319,62 @@
                 native:model.debounce.300ms="draftNotes"
             />
 
+            @if (count($categoryOptions) > 0)
+                <native:select
+                    :label="__('app.list_detail.category')"
+                    :value="$draftCategoryName"
+                    :options="$categoryOptions"
+                    @change="setDraftCategory"
+                />
+            @endif
+
+            @if (count($storeOptions) > 0)
+                <native:select
+                    :label="__('app.list_detail.store')"
+                    :value="$draftStoreName"
+                    :options="$storeOptions"
+                    @change="setDraftStore"
+                />
+            @endif
+
+            {{-- Ícono --}}
+            <native:button
+                :label="__('app.list_detail.change_icon')"
+                variant="secondary"
+                class="w-full"
+                @press="toggleIconPicker"
+            />
+
+            @if ($iconPickerOpen)
+                <native:outlined-text-input
+                    :placeholder="__('app.list_detail.icon_search')"
+                    leading-icon="search"
+                    native:model.debounce.300ms="iconSearch"
+                />
+
+                <native:row class="w-full flex-wrap gap-2">
+                    @foreach ($filteredIcons() as $icon)
+                        <native:pressable
+                            :native:key="'icon-'.$icon['name']"
+                            class="size-[44] items-center justify-center rounded-lg border"
+                            :class="$draftIcon === $icon['name'] ? 'border-theme-primary bg-theme-surface-variant' : 'border-theme-outline bg-theme-surface'"
+                            @press="selectIcon({{ json_encode($icon['name']) }})"
+                        >
+                            <native:image :src="$icon['url']" class="h-[26] w-[26]" fit="contain" />
+                        </native:pressable>
+                    @endforeach
+                </native:row>
+            @endif
+
+            @if ($itemError)
+                <native:column class="w-full rounded-lg bg-theme-destructive/10 p-3">
+                    <native:text class="text-sm text-theme-destructive">{{ $itemError }}</native:text>
+                </native:column>
+            @endif
+
             <native:button :label="__('app.list_detail.save')" class="w-full" @press="saveItem" />
             <native:button :label="__('app.list_detail.remove')" variant="destructive" class="w-full" @press="deleteItem" />
+
         </native:column>
     </native:bottom-sheet>
 </native:column>

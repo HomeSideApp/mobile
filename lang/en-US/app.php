@@ -97,6 +97,22 @@ return [
         'needs_login' => 'You need to sign in',
     ],
 
+    'actions' => 'Actions',
+    'rename' => 'Rename',
+    'pending_count' => ':count pending',
+    'search_placeholder' => 'Search a product…',
+    'categories' => 'Categories',
+    'pending_hint' => 'Tap to check · hold to edit',
+    'upload_photo' => 'Upload photo',
+    'photo_failed' => 'We could not read the chosen photo.',
+    'uploading' => 'Uploading photo…',
+    'photo_uploaded' => 'Photo updated.',
+    'category' => 'Category',
+    'store' => 'Store',
+    'no_store' => 'No store',
+    'change_icon' => 'Change icon',
+    'icon_search' => 'Search an icon…',
+
     'picker' => [
         'title' => 'Add item',
         'search' => 'Search a product',

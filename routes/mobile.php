@@ -5,7 +5,6 @@ use App\NativeComponents\ListCreate;
 use App\NativeComponents\ListDetail;
 use App\NativeComponents\Lists;
 use App\NativeComponents\Login;
-use App\NativeComponents\ProductPicker;
 use App\NativeComponents\Profile;
 use App\NativeComponents\Recipes;
 use App\NativeComponents\ServerSetup;
@@ -45,14 +44,6 @@ Route::native('/lists/{list}', ListDetail::class)
     ->layout(AppStackLayout::class)
     ->name('lists.show');
 
-Route::native('/lists/{list}/add', ProductPicker::class)
-    ->layout(AppStackLayout::class)
-    ->name('lists.add');
-
 Route::native('/households/{household}/lists/{list}', ListDetail::class)
     ->layout(AppStackLayout::class)
     ->name('households.lists.show');
-
-Route::native('/households/{household}/lists/{list}/add', ProductPicker::class)
-    ->layout(AppStackLayout::class)
-    ->name('households.lists.add');

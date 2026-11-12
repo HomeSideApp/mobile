@@ -7,7 +7,6 @@ use App\NativeComponents\ListCreate;
 use App\NativeComponents\ListDetail;
 use App\NativeComponents\Lists;
 use App\NativeComponents\Login;
-use App\NativeComponents\ProductPicker;
 use App\NativeComponents\Profile;
 use App\NativeComponents\Recipes;
 use App\NativeComponents\ServerSetup;
@@ -47,9 +46,7 @@ class NativeRoutingTest extends TestCase
     {
         Native::visit('/lists/create')->assertScreen(ListCreate::class);
         Native::visit('/lists/list-1')->assertScreen(ListDetail::class);
-        Native::visit('/lists/list-1/add')->assertScreen(ProductPicker::class);
         Native::visit('/households/household-1/lists/list-1')->assertScreen(ListDetail::class);
-        Native::visit('/households/household-1/lists/list-1/add')->assertScreen(ProductPicker::class);
     }
 
     public function test_an_unknown_native_uri_is_not_resolved(): void

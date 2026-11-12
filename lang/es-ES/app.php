@@ -97,6 +97,22 @@ return [
         'needs_login' => 'Necesitás iniciar sesión',
     ],
 
+    'actions' => 'Acciones',
+    'rename' => 'Renombrar',
+    'pending_count' => ':count pendientes',
+    'search_placeholder' => 'Buscar producto…',
+    'categories' => 'Categorías',
+    'pending_hint' => 'Tocá para tildar · mantené para editar',
+    'upload_photo' => 'Subir foto',
+    'photo_failed' => 'No pudimos leer la foto elegida.',
+    'uploading' => 'Subiendo foto…',
+    'photo_uploaded' => 'Foto actualizada.',
+    'category' => 'Categoría',
+    'store' => 'Local',
+    'no_store' => 'Sin local',
+    'change_icon' => 'Cambiar ícono',
+    'icon_search' => 'Buscar ícono…',
+
     'picker' => [
         'title' => 'Agregar ítem',
         'search' => 'Buscar producto',

@@ -130,6 +130,47 @@ final class ListsService
         ));
     }
 
+    /**
+     * Catálogo de locales. El endpoint vive bajo un hogar porque valida
+     * pertenencia, pero devuelve el catálogo global de tiendas: sirve igual
+     * para una lista personal mientras el usuario tenga hogar activo.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function stores(string $householdId, int $perPage = 100): array
+    {
+        return array_values(Session::data(
+            $this->session->client()->get('/households/'.$householdId.'/stores', ['perPage' => $perPage]),
+        ));
+    }
+
+    /**
+     * Sube la foto de un ítem (multipart).
+     *
+     * @return array<string, mixed>
+     */
+    public function uploadItemImage(
+        string $listId,
+        string $itemId,
+        string $contents,
+        string $filename,
+        ?string $householdId = null,
+    ): array {
+        return Session::data($this->session->client()->upload(
+            $this->path($householdId, $listId).'/items/'.$itemId,
+            $contents,
+            $filename,
+        ));
+    }
+
+    /**
+     * Ruta autenticada de la imagen del ítem (la app la descarga con token).
+     */
+    public function itemImagePath(string $listId, string $itemId, ?string $householdId = null): string
+    {
+        return $this->path($householdId, $listId).'/items/'.$itemId.'/image';
+    }
+
     public function deleteItem(string $listId, string $itemId, ?string $householdId = null): void
     {
         $this->session->client()->delete($this->path($householdId, $listId).'/items/'.$itemId);
