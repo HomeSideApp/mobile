@@ -651,6 +651,12 @@ final class ListDetail extends NativeComponent
 
         (new ItemImageCache)->forget($this->listId, $this->openItemId);
 
+        // El plugin de cámara deja los archivos elegidos en storage privado y no
+        // los borra nunca: una vez subida, la copia local no sirve.
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
         $this->itemNotice = __('app.list_detail.photo_uploaded');
         $this->load();
     }

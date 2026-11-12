@@ -273,7 +273,9 @@ class ListDetailTest extends TestCase
             && str_ends_with($request->url(), '/lists/list-1/items/item-1')
             && $request->hasFile('image_url'));
 
-        @unlink($path);
+        // El plugin no borra los archivos que deja en storage privado: lo hacemos
+        // nosotros después de subirlos, o se acumulan para siempre.
+        $this->assertFileDoesNotExist($path);
     }
 
     public function test_a_cancelled_pick_uploads_nothing(): void
