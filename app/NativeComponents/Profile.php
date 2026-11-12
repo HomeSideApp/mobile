@@ -69,12 +69,29 @@ final class Profile extends NativeComponent
 
     public function mount(): void
     {
+        $this->refreshLocales();
+
         $this->load();
     }
 
     public function onResume(): void
     {
         $this->load();
+    }
+
+    /**
+     * Refresca el idioma del dispositivo y las opciones del selector.
+     *
+     * `$locales` es lo que dibuja la lista de idiomas: si queda vacío, la
+     * sección aparece con su título y sin nada para elegir.
+     */
+    private function refreshLocales(): void
+    {
+        $service = new LocaleService;
+        $service->apply();
+
+        $this->appLocale = $service->current();
+        $this->locales = $service->options();
     }
 
     public function navTitle(): string
@@ -356,6 +373,8 @@ final class Profile extends NativeComponent
 
         try {
             $this->applyUser((new AuthService)->me());
+            // `/me` puede haber cambiado el idioma (la cuenta manda).
+            $this->refreshLocales();
         } catch (HomesideException $exception) {
             if ($exception->requiresLogin()) {
                 $this->hasSession = false;

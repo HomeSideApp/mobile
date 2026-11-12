@@ -93,6 +93,17 @@ class LocaleTest extends TestCase
             && $request['email'] === 'ana@example.com');
     }
 
+    public function test_the_profile_renders_both_language_options(): void
+    {
+        config(['nativephp.version_code' => 50]);
+        Http::fake(['*/releases/*/latest.json' => Http::response('', 404)]);
+
+        Native::test(Profile::class, platform: 'android')
+            ->assertSet('appLocale', 'es-ES')
+            ->assertSee('Español')
+            ->assertSee('English');
+    }
+
     public function test_without_a_session_the_language_changes_only_on_the_device(): void
     {
         config(['nativephp.version_code' => 50]);
