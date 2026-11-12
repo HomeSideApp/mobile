@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "82d3d817c3a6f7ec025cd2e7c0f93ce5",
+    "content-hash": "9b17d136b3e1d23c1bb366b5ab076931",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1299,6 +1299,76 @@
             ],
             "time": "2026-08-24T17:13:02+00:00",
             "published-time": "2026-08-24T17:13:22+00:00"
+        },
+        {
+            "name": "homeside/apk-updater",
+            "version": "dev-develop",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/HomeSideApp/NativePHP-APK-Updater.git",
+                "reference": "b3fc3963f5db682c291d99ea22284af8a71398fd"
+            },
+            "require": {
+                "nativephp/mobile": "^4.6",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.27",
+                "phpunit/phpunit": "^11.5|^12.0"
+            },
+            "default-branch": true,
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Homeside\\ApkUpdater\\ApkUpdaterServiceProvider"
+                    ],
+                    "aliases": {
+                        "ApkUpdater": "Homeside\\ApkUpdater\\Facades\\ApkUpdater"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Homeside\\ApkUpdater\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Homeside\\ApkUpdater\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "lint": [
+                    "pint"
+                ],
+                "test:lint": [
+                    "pint --test"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "HomeSide contributors",
+                    "homepage": "https://github.com/HomeSideApp"
+                }
+            ],
+            "description": "Self-hosted APK updates for NativePHP Mobile on Android: download, verify and hand the system installer an update, with no Play Store involved.",
+            "homepage": "https://github.com/HomeSideApp/nativephp-apk-updater",
+            "keywords": [
+                "android",
+                "apk",
+                "nativephp",
+                "nativephp-mobile",
+                "ota",
+                "updater"
+            ],
+            "time": "2026-11-12T00:10:00+00:00"
         },
         {
             "name": "laravel/framework",
@@ -9460,7 +9530,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "homeside/apk-updater": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

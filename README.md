@@ -160,10 +160,14 @@ Mientras no haya un tag, la app sigue `dev-develop` del repo. El `type` del
 paquete tiene que ser `nativephp-plugin`: con `library` se instala y autoloada,
 pero el registro de NativePHP no lo ve y el APK se compila sin su Kotlin.
 
+Ya está instalado en `composer.json` como repositorio **git** (no `vcs`): el
+driver `git` clona directo y no pasa por la API de GitHub, que sin token limita
+a 60 requests por hora y por IP — el motivo por el que el `require` fallaba con
+un error de ssh que no tenía nada que ver.
+
 El código está escrito para las dos situaciones (`Profile::inAppUpdater()`): si
-la clase no existe —o el dispositivo no es Android— cae al navegador. Por eso la
-dependencia es opcional y no está en `composer.json` todavía, y
-`tests/Feature/InAppUpdateTest.php` se saltea solo hasta que se instale.
+la clase no existe —o el dispositivo no es Android— cae al navegador.
+`tests/Feature/InAppUpdateTest.php` se saltea solo si el paquete no está.
 
 > Cuidado al publicar el provider: `vendor:publish --tag=nativephp-plugins-provider --force`
 > borra los plugins ya registrados (`nativephp/mobile-ui` incluido).

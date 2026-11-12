@@ -36,6 +36,8 @@ class NativeServiceProvider extends ServiceProvider
     {
         return [
             NativeUIServiceProvider::class,
+            \Homeside\ApkUpdater\ApkUpdaterServiceProvider::class,
+        
 
         ];
     }
