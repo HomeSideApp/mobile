@@ -238,14 +238,18 @@ class ListDetailTest extends TestCase
         $this->connect();
         $this->fakeScreen();
 
-        Native::fakeBridge()->respondTo('Camera.PickMedia', ['status' => 'success']);
+        // Lo que devuelve el plugin de verdad: un mapa vacío. El resultado llega
+        // después como evento, y `PendingMediaPicker::start()` leería esto como
+        // fracaso.
+        Native::fakeBridge()->respondTo('Camera.PickMedia', '{}');
 
         Native::test(ListDetail::class, ['list' => 'list-1'])
             ->call('openItem', 'item-1')
             ->call('pickPhoto')
             ->assertSet('itemError', null);
 
-        Native::fakeBridge()->assertCalled('Camera.PickMedia');
+        Native::fakeBridge()->assertCalled('Camera.PickMedia', static fn (array $params): bool => ($params['mediaType'] ?? null) === 'image'
+            && ($params['multiple'] ?? null) === false);
     }
 
     public function test_a_picked_photo_is_uploaded_to_the_item(): void

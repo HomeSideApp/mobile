@@ -7,6 +7,7 @@ use App\Services\Homeside\AuthService;
 use App\Services\Homeside\CatalogService;
 use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
+use App\Services\Media\GalleryPicker;
 use App\Services\Media\ItemImageCache;
 use App\Services\Settings\LocaleService;
 use App\Support\CardColor;
@@ -15,7 +16,6 @@ use Illuminate\View\View;
 use Native\Mobile\Attributes\On;
 use Native\Mobile\Edge\NativeComponent;
 use Native\Mobile\Events\Gallery\MediaSelected;
-use Native\Mobile\Facades\Camera;
 
 /**
  * Detalle de una lista, con el mismo repertorio que la web:
@@ -601,12 +601,9 @@ final class ListDetail extends NativeComponent
         $this->itemError = null;
         $this->itemNotice = null;
 
-        // Quien registra `Camera.PickMedia` es el plugin nativephp/mobile-camera.
-        // Sin él `start()` devuelve false y, sin este chequeo, el botón no hacía
-        // absolutamente nada: ni permiso, ni galería, ni error.
-        $started = Camera::pickImages('image', false, 1)->start();
-
-        if (! $started) {
+        // `GalleryPicker` consulta el bridge sin depender del bool de
+        // `PendingMediaPicker::start()`, que siempre da false con este plugin.
+        if (! (new GalleryPicker)->pickImage()) {
             $this->itemError = __('app.list_detail.photo_unavailable');
         }
     }
