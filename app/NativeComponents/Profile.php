@@ -161,6 +161,10 @@ final class Profile extends NativeComponent
         // El renderer elige el hex del companion `dark` cuando Android está en
         // modo oscuro: es la variable que decide qué se ve, y sin ella un
         // diagnóstico de color queda a medias.
+        // Comparar el archivo con la config viva delata una config cacheada con
+        // las paletas colapsadas, que es lo que deja la app trabada.
+        $file = (new AppearanceService)->palettes();
+
         $systemDark = false;
 
         try {
@@ -176,8 +180,10 @@ final class Profile extends NativeComponent
             ['label' => 'body bg', 'value' => $lightBg],
             ['label' => 'body bg dark', 'value' => $darkBg],
             ['label' => 'body bg used', 'value' => $systemDark ? $darkBg : $lightBg],
-            ['label' => 'theme light bg', 'value' => (string) config('native-ui.theme.light.background')],
-            ['label' => 'theme dark bg', 'value' => (string) config('native-ui.theme.dark.background')],
+            ['label' => 'file light bg', 'value' => (string) ($file['light']['background'] ?? '—')],
+            ['label' => 'file dark bg', 'value' => (string) ($file['dark']['background'] ?? '—')],
+            ['label' => 'live light bg', 'value' => (string) config('native-ui.theme.light.background')],
+            ['label' => 'live dark bg', 'value' => (string) config('native-ui.theme.dark.background')],
             ['label' => 'last merge', 'value' => AppearanceService::lastAppliedLabel()],
         ];
     }

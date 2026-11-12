@@ -35,19 +35,6 @@ final class AppearanceService
      * así que acá se limpia igual pero por las dudas: es barato y evita depender
      * de ese detalle interno si algún día cambia.
      */
-
-    /**
-     * Paletas originales, capturadas una sola vez.
-     *
-     * `Theme::merge()` no sólo cambia los tokens: escribe el resultado en
-     * `config('native-ui.theme')`. Después de forzar claro, la config deja de
-     * tener el bloque `light`, así que leerla otra vez devolvería un tema ya
-     * mutado y "volver a sistema" no podría restaurar nada.
-     *
-     * @var array{light: array<string, string>, dark: array<string, string>}|null
-     */
-    private static ?array $palettes = null;
-
     /** Último merge de esta ejecución, para el panel de diagnóstico. */
     private static ?string $lastApplied = null;
 
@@ -156,34 +143,31 @@ final class AppearanceService
     }
 
     /**
+     * Paletas del proyecto, leídas **siempre** del archivo de config.
+     *
+     * Nunca de `config('native-ui.theme')`: `Theme::merge()` escribe su
+     * resultado ahí, y si esa config se cachea en disco (`config:cache`)
+     * después de un merge, las dos paletas quedan iguales y la app se traba
+     * para siempre — forzar oscuro escribe oscuro y volver a claro ya no tiene
+     * de dónde sacar los colores. Ese estado sobrevive a cerrar y abrir.
+     *
+     * El `require` de un archivo chico y opcacheado cuesta nada, así que no hay
+     * caché propia que invalidar.
+     *
      * @return array{light: array<string, string>, dark: array<string, string>}
      */
-    private function palettes(): array
+    public function palettes(): array
     {
-        if (self::$palettes !== null) {
-            return self::$palettes;
-        }
+        $file = is_file(config_path('native-ui.php'))
+            ? require config_path('native-ui.php')
+            : [];
 
-        $light = config('native-ui.theme.light');
-        $dark = config('native-ui.theme.dark');
+        $light = $file['theme']['light'] ?? config('native-ui.theme.light');
+        $dark = $file['theme']['dark'] ?? config('native-ui.theme.dark');
 
-        // Si la config ya viene mutada (un merge previo), se lee el archivo: es
-        // la única copia intacta de la paleta del proyecto.
-        if (! is_array($light) || ! is_array($dark) || $light === [] || $dark === []) {
-            $file = is_file(config_path('native-ui.php'))
-                ? require config_path('native-ui.php')
-                : [];
-
-            $light = $file['theme']['light'] ?? [];
-            $dark = $file['theme']['dark'] ?? [];
-        }
-
-        /** @var array{light: array<string, string>, dark: array<string, string>} $captured */
-        $captured = [
+        return [
             'light' => is_array($light) ? $light : [],
             'dark' => is_array($dark) ? $dark : [],
         ];
-
-        return self::$palettes = $captured;
     }
 }

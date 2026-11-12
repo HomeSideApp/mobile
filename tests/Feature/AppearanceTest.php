@@ -77,6 +77,29 @@ class AppearanceTest extends TestCase
         $this->assertArrayNotHasKey('dark', $after, 'la paleta forzada no deja companion oscuro');
     }
 
+    public function test_a_collapsed_cached_config_does_not_lock_the_theme(): void
+    {
+        // `config:cache` corrido después de forzar claro: en disco quedaron las
+        // dos paletas iguales. Leyendo de la config viva, forzar oscuro escribe
+        // oscuro una vez y después ya no hay de dónde sacar los colores claros;
+        // la app queda trabada incluso después de reiniciar.
+        $file = require config_path('native-ui.php');
+        config(['native-ui.theme' => [
+            'light' => $file['theme']['light'],
+            'dark' => $file['theme']['light'],
+        ]]);
+
+        (new AppearanceService)->apply('dark');
+
+        $this->assertSame($file['theme']['dark']['background'], config('native-ui.theme.light.background'));
+        $this->assertSame($file['theme']['dark']['background'], config('native-ui.theme.dark.background'));
+
+        // Y volver a claro sigue siendo posible.
+        (new AppearanceService)->apply('light');
+
+        $this->assertSame($file['theme']['light']['background'], config('native-ui.theme.dark.background'));
+    }
+
     public function test_the_middleware_reapplies_the_palette_after_the_providers_boot(): void
     {
         (new AppearanceService)->set('dark');
