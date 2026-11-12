@@ -79,6 +79,9 @@ final class ListDetail extends NativeComponent
     // ── Hoja de detalle ──────────────────────────────────────────────────
     public ?string $openItemId = null;
 
+    /** Nombre del ítem abierto, para el encabezado de la hoja. */
+    public string $openItemName = '';
+
     public string $draftQuantity = '';
 
     public string $draftUnit = '';
@@ -410,6 +413,7 @@ final class ListDetail extends NativeComponent
         }
 
         $this->openItemId = $itemId;
+        $this->openItemName = (string) ($item['name'] ?? '');
         $this->itemError = null;
         $this->itemNotice = null;
         $this->draftImageUrl = is_string($item['image_url'] ?? null) ? $item['image_url'] : null;
@@ -490,6 +494,7 @@ final class ListDetail extends NativeComponent
     public function closeItem(): void
     {
         $this->openItemId = null;
+        $this->openItemName = '';
         $this->iconPickerOpen = false;
         $this->itemError = null;
         $this->itemNotice = null;

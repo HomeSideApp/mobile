@@ -298,9 +298,21 @@
             <native:column class="w-full gap-4 p-5 pb-10">
 
                 <native:row class="w-full items-center gap-2">
-                    <native:text class="flex-1 text-lg font-bold text-theme-on-background">
-                        {{ $iconPickerOpen ? __('app.list_detail.change_icon') : __('app.list_detail.edit_item') }}
-                    </native:text>
+                    @if ($iconPickerOpen)
+                        <native:text class="flex-1 text-lg font-bold text-theme-on-background">
+                            {{ __('app.list_detail.change_icon') }}
+                        </native:text>
+                    @else
+                        <native:column class="flex-1 gap-0.5">
+                            <native:text class="text-[11px] font-semibold uppercase text-theme-on-surface-variant">
+                                {{ __('app.list_detail.edit_item') }}
+                            </native:text>
+                            {{-- El nombre primero: saber que es "queso" ordena todo lo demás. --}}
+                            <native:text class="text-lg font-bold text-theme-on-background" :max-lines="2">
+                                {{ $openItemName }}
+                            </native:text>
+                        </native:column>
+                    @endif
 
                     @if ($iconPickerOpen)
                         <native:pressable class="rounded-lg bg-theme-surface px-3 py-2" @press="toggleIconPicker">
@@ -376,6 +388,14 @@
                         @endif
                     </native:column>
 
+                    {{-- Antes de la cantidad: la nota es la variedad, el detalle que
+                         hay que ver al abrir el ítem ("queso cremoso", "sin sal"). --}}
+                    <native:outlined-text-input
+                        :label="__('app.list_detail.note')"
+                        :placeholder="__('app.list_detail.note_placeholder')"
+                        native:model.debounce.300ms="draftNotes"
+                    />
+
                     <native:outlined-text-input
                         :label="__('app.list_detail.quantity')"
                         keyboard="decimal"
@@ -386,12 +406,6 @@
                         :label="__('app.list_detail.unit')"
                         :placeholder="__('app.list_detail.unit_placeholder')"
                         native:model.debounce.300ms="draftUnit"
-                    />
-
-                    <native:outlined-text-input
-                        :label="__('app.list_detail.note')"
-                        :placeholder="__('app.list_detail.note_placeholder')"
-                        native:model.debounce.300ms="draftNotes"
                     />
 
                     @if (count($categoryOptions) > 0)

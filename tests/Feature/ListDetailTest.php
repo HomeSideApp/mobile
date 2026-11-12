@@ -425,6 +425,21 @@ class ListDetailTest extends TestCase
         @unlink($path);
     }
 
+    public function test_the_sheet_shows_the_item_name_and_its_note(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            // El encabezado es el ítem, no un "Editar ítem" genérico.
+            ->assertSet('openItemName', 'Leche')
+            ->assertSee('Leche')
+            // La nota llega precargada: es la variedad, el detalle que se
+            // necesita ver antes de tocar la cantidad.
+            ->assertSet('draftNotes', 'Sin sal');
+    }
+
     public function test_the_icon_picker_replaces_the_form_and_comes_back(): void
     {
         $this->connect();
