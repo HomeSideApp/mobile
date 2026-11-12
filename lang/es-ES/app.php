@@ -113,6 +113,8 @@ return [
         'pending_hint' => 'Tocá para tildar · mantené para editar',
         'upload_photo' => 'Subir foto',
         'photo_unavailable' => 'No pudimos abrir la galería del dispositivo.',
+        'change_photo' => 'Cambiar foto',
+        'photo_hint' => 'Todavía no hay foto.',
         'photo_failed' => 'No pudimos leer la foto elegida.',
         'uploading' => 'Subiendo foto…',
         'photo_uploaded' => 'Foto actualizada.',

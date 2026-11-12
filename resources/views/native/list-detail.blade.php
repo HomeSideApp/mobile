@@ -295,11 +295,33 @@
 
             <native:text class="text-lg font-bold text-theme-on-background">{{ __('app.list_detail.edit_item') }}</native:text>
 
-            {{-- Foto --}}
+            {{-- Foto: preview de lo guardado o de lo recién elegido --}}
             <native:column class="w-full gap-2">
-                <native:button :label="__('app.list_detail.upload_photo')" variant="secondary" class="w-full" @press="pickPhoto" />
+                @if ($draftImageUrl !== null)
+                    <native:image :src="$draftImageUrl" class="h-[140] w-full rounded-lg" fit="cover" />
+                @else
+                    <native:column class="h-[100] w-full items-center justify-center rounded-lg border border-theme-outline bg-theme-surface-variant">
+                        <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.list_detail.photo_hint') }}</native:text>
+                    </native:column>
+                @endif
+
+                @if ($uploadState === 'uploading')
+                    <native:row class="w-full items-center gap-2">
+                        <native:activity-indicator />
+                        <native:text class="flex-1 text-xs text-theme-on-surface-variant">{{ __('app.list_detail.uploading') }}</native:text>
+                    </native:row>
+                @endif
+
+                <native:button
+                    :label="$draftImageUrl !== null ? __('app.list_detail.change_photo') : __('app.list_detail.upload_photo')"
+                    variant="secondary"
+                    class="w-full"
+                    :disabled="$uploadState === 'uploading'"
+                    @press="pickPhoto"
+                />
+
                 @if ($itemNotice)
-                    <native:text class="text-xs text-theme-on-surface-variant">{{ $itemNotice }}</native:text>
+                    <native:text class="text-xs text-theme-success">{{ $itemNotice }}</native:text>
                 @endif
             </native:column>
 

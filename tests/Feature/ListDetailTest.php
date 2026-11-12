@@ -307,6 +307,59 @@ class ListDetailTest extends TestCase
             ->assertSet('itemError', 'No pudimos leer la foto elegida.');
     }
 
+    public function test_the_picked_photo_is_previewed_and_the_state_reported(): void
+    {
+        $this->connect();
+        $this->fakeScreen();
+
+        $path = tempnam(sys_get_temp_dir(), 'photo').'.jpg';
+        file_put_contents($path, "\xFF\xD8\xFF".str_repeat('a', 32));
+
+        Http::fake([
+            '*/api/v1/lists/list-1/items/item-1' => Http::response(['data' => ['id' => 'item-1']]),
+            '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
+            '*/api/v1/categories*' => Http::response(['data' => []]),
+            '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
+        ]);
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1')
+            ->emitNative(MediaSelected::class, [
+                'success' => true,
+                'count' => 1,
+                'files' => [['path' => $path, 'mimeType' => 'image/jpeg', 'extension' => 'jpg', 'type' => 'image']],
+            ])
+            ->assertSet('uploadState', 'done')
+            ->assertSet('itemNotice', 'Foto actualizada.');
+
+        // El preview apunta al archivo elegido: el usuario ve qué seleccionó.
+        $this->assertStringStartsWith('file://', (string) $component->get('draftImageUrl'));
+    }
+
+    public function test_opening_an_item_with_a_photo_shows_it(): void
+    {
+        $this->connect();
+
+        $payload = $this->listPayload();
+        $payload['data']['items'][0]['image_url'] = 'https://homeside.cloud/api/v1/lists/list-1/items/item-1/image';
+
+        Http::fake([
+            '*/api/v1/lists/list-1/items/item-1/image' => Http::response("\xFF\xD8\xFF".str_repeat('a', 32)),
+            '*/api/v1/lists/list-1' => Http::response($payload),
+            '*/api/v1/categories*' => Http::response(['data' => []]),
+            '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
+        ]);
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1'])
+            ->call('openItem', 'item-1');
+
+        $this->assertStringStartsWith('file://', (string) $component->get('draftImageUrl'));
+        // La card usa el mismo valor que la hoja.
+        $this->assertStringStartsWith('file://', (string) $component->get('pending.0.image_url'));
+    }
+
     public function test_a_cancelled_pick_uploads_nothing(): void
     {
         $this->connect();

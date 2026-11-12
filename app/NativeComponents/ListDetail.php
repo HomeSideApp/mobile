@@ -112,6 +112,12 @@ final class ListDetail extends NativeComponent
 
     public ?string $itemNotice = null;
 
+    /** Foto que se muestra en la hoja: la guardada o la recién elegida. */
+    public ?string $draftImageUrl = null;
+
+    /** idle | uploading | done | failed */
+    public string $uploadState = 'idle';
+
     public function mount(): void
     {
         (new LocaleService)->apply();
@@ -403,6 +409,8 @@ final class ListDetail extends NativeComponent
         $this->openItemId = $itemId;
         $this->itemError = null;
         $this->itemNotice = null;
+        $this->draftImageUrl = is_string($item['image_url'] ?? null) ? $item['image_url'] : null;
+        $this->uploadState = 'idle';
         $this->iconPickerOpen = false;
         $this->iconSearch = '';
 
@@ -482,6 +490,8 @@ final class ListDetail extends NativeComponent
         $this->iconPickerOpen = false;
         $this->itemError = null;
         $this->itemNotice = null;
+        $this->draftImageUrl = null;
+        $this->uploadState = 'idle';
     }
 
     public function saveItem(): void
@@ -632,14 +642,21 @@ final class ListDetail extends NativeComponent
         if (! is_string($path) || $path === '') {
             $this->itemError = __('app.list_detail.photo_failed');
             $this->itemNotice = null;
+            $this->uploadState = 'failed';
 
             return;
         }
+
+        // Se previsualiza lo elegido antes de subirlo: el archivo ya está en el
+        // dispositivo y el usuario necesita ver que la selección funcionó.
+        $this->draftImageUrl = 'file://'.$path;
+        $this->uploadState = 'uploading';
 
         $contents = @file_get_contents($path);
 
         if (! is_string($contents) || $contents === '') {
             $this->itemError = __('app.list_detail.photo_failed');
+            $this->uploadState = 'failed';
 
             return;
         }
@@ -657,6 +674,7 @@ final class ListDetail extends NativeComponent
         } catch (HomesideException $exception) {
             $this->itemError = $exception->getMessage();
             $this->itemNotice = null;
+            $this->uploadState = 'failed';
 
             return;
         }
@@ -670,7 +688,15 @@ final class ListDetail extends NativeComponent
         }
 
         $this->itemNotice = __('app.list_detail.photo_uploaded');
+        $this->uploadState = 'done';
         $this->load();
+
+        // Tras recargar, la foto guardada es la que devuelve el servidor.
+        $fresh = collect($this->pending)->firstWhere('id', $this->openItemId);
+
+        if (is_array($fresh) && is_string($fresh['image_url'] ?? null)) {
+            $this->draftImageUrl = $fresh['image_url'];
+        }
     }
 
     // ── Acciones de la lista ─────────────────────────────────────────────
