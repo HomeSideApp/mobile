@@ -19,8 +19,13 @@ namespace App\Services\Homeside;
 final class HouseholdsService
 {
     /**
-     * Cache por instancia: una pantalla pide hogar activo y nombre, y sin esto
-     * serían dos `GET /households` por render para el mismo dato.
+     * Cache del listado para no pedirlo dos veces en el mismo render.
+     *
+     * **Ojo con el alcance**: el runtime de NativePHP es persistente y el
+     * servicio es un singleton del contenedor, así que este memo puede vivir
+     * más que un request. Se invalida en cada mutación (`create`, `switchTo`,
+     * `acceptInvitation`, `declineInvitation`) con `forget()`; sin eso la lista
+     * quedaba vieja justo después de aceptar una invitación.
      *
      * @var array<int, array<string, mixed>>|null
      */
@@ -52,6 +57,15 @@ final class HouseholdsService
         }
 
         return $fetched;
+    }
+
+    /**
+     * Descarta el listado cacheado. Se llama en cada operación que cambia la
+     * pertenencia a hogares.
+     */
+    public function forget(): void
+    {
+        $this->households = null;
     }
 
     public function activeId(): ?string
@@ -94,9 +108,14 @@ final class HouseholdsService
      */
     public function create(array $attributes): array
     {
-        return Session::data(
+        $created = Session::data(
             $this->session->client()->post('/households', $attributes),
         );
+
+        // Un hogar nuevo cambia la lista: el memo tiene que morir acá.
+        $this->forget();
+
+        return $created;
     }
 
     /**
@@ -111,6 +130,8 @@ final class HouseholdsService
         Session::data(
             $this->session->client()->post('/households/switch/'.$householdId),
         );
+
+        $this->forget();
     }
 
     /**
@@ -130,6 +151,8 @@ final class HouseholdsService
         Session::data(
             $this->session->client()->post('/households/invitations/'.$invitationId.'/accept'),
         );
+
+        $this->forget();
     }
 
     /**
@@ -144,6 +167,8 @@ final class HouseholdsService
         Session::data(
             $this->session->client()->delete('/households/invitations/'.$invitationId),
         );
+
+        $this->forget();
     }
 
     /**

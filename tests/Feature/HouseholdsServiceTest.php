@@ -197,6 +197,33 @@ class HouseholdsServiceTest extends TestCase
             && str_ends_with($request->url(), '/api/v1/households/invitations/invitation-2'));
     }
 
+    public function test_accepting_an_invitation_invalidates_the_cached_list(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households/invitations/*' => Http::response(['data' => ['id' => 'invitation-1']]),
+            '*/api/v1/households' => Http::response(['data' => [
+                ['id' => 'household-1', 'name' => 'Casa de Ana'],
+                ['id' => 'household-8', 'name' => 'Lo de Beto'],
+            ]]),
+        ]);
+
+        $service = app(HouseholdsService::class);
+
+        // El runtime es persistente y el servicio es singleton: sin invalidar,
+        // la lista quedaba vieja justo después de aceptar una invitación.
+        $service->all();
+        $service->acceptInvitation('invitation-1');
+        $names = array_column($service->all(), 'name');
+
+        $this->assertCount(2, $names);
+        $this->assertContains('Lo de Beto', $names);
+
+        // Dos listados + el accept: la segunda lectura fue a la red, no al memo.
+        Http::assertSentCount(3);
+    }
+
     public function test_it_reports_a_missing_session(): void
     {
         $this->connect(token: null);
