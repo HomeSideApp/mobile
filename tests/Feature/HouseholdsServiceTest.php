@@ -156,6 +156,47 @@ class HouseholdsServiceTest extends TestCase
         }
     }
 
+    public function test_it_lists_the_pending_invitations(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/households/invitations' => Http::response(['data' => [
+                [
+                    'id' => 'invitation-1',
+                    'status' => 'pending',
+                    'expires_at' => '2026-12-01T10:00:00+00:00',
+                    'household' => ['id' => 'household-7', 'name' => 'Casa de Beto'],
+                    'inviter' => ['id' => 'user-2', 'name' => 'Beto'],
+                ],
+            ]]),
+        ]);
+
+        $invitations = (new HouseholdsService)->invitations();
+
+        $this->assertCount(1, $invitations);
+        $this->assertSame('Casa de Beto', $invitations[0]['household']['name'] ?? null);
+    }
+
+    public function test_it_accepts_and_declines_invitations(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/households/invitations/*' => Http::response(['data' => ['id' => 'invitation-1']]),
+        ]);
+
+        $service = new HouseholdsService;
+        $service->acceptInvitation('invitation-1');
+        $service->declineInvitation('invitation-2');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/api/v1/households/invitations/invitation-1/accept'));
+
+        // Rechazar es un DELETE: el invitado puede cancelar su propia invitación
+        // (el servidor autoriza por email), no hace falta un endpoint aparte.
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_ends_with($request->url(), '/api/v1/households/invitations/invitation-2'));
+    }
+
     public function test_it_reports_a_missing_session(): void
     {
         $this->connect(token: null);

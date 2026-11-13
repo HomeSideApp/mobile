@@ -28,6 +28,7 @@ class HouseScreenTest extends TestCase
                 'household_recipes_count' => 12,
                 'enabled_modules' => ['economy', 'recipes'],
             ]]),
+            '*/api/v1/households/invitations' => Http::response(['data' => []]),
             '*/api/v1/households/configuration' => Http::response(['data' => [
                 'modules' => [
                     ['key' => 'recipes', 'label' => 'Recetas', 'description' => 'Recetario compartido'],
@@ -121,6 +122,7 @@ class HouseScreenTest extends TestCase
             '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
                 'enabled_modules' => [],
             ]]),
+            '*/api/v1/households/invitations' => Http::response(['data' => []]),
             '*/api/v1/households/configuration' => Http::response(['data' => [
                 'modules' => [
                     ['key' => 'recipes', 'label' => 'households.modules.recipes_label'],
@@ -141,6 +143,73 @@ class HouseScreenTest extends TestCase
         $this->assertSame('Mystery Module', $modules[1]['label']);
     }
 
+    public function test_it_lists_pending_invitations_and_can_accept_them(): void
+    {
+        $this->connect();
+
+        // Un solo `Http::fake()`: llamarlo dos veces acumula stubs y el primero
+        // que matchea gana, así que el segundo conjunto nunca se usaba.
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households' => Http::response(['data' => [
+                ['id' => 'household-1', 'name' => 'Casa de Ana'],
+            ]]),
+            '*/api/v1/households/configuration' => Http::response(['data' => ['modules' => []]]),
+            '*/api/v1/households/invitations*' => Http::response(['data' => [
+                [
+                    'id' => 'invitation-1',
+                    'status' => 'pending',
+                    'expires_at' => '2026-12-01T10:00:00+00:00',
+                    'household' => ['id' => 'household-7', 'name' => 'Casa de Beto'],
+                    'inviter' => ['id' => 'user-2', 'name' => 'Beto'],
+                ],
+            ]]),
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
+                'enabled_modules' => [],
+            ]]),
+            '*/api/v1/households/household-1' => Http::response(['data' => [
+                'id' => 'household-1', 'name' => 'Casa de Ana', 'members' => [],
+            ]]),
+        ]);
+
+        $screen = Native::test(House::class)
+            ->assertSee('Casa de Beto')
+            ->assertSet('invitationCount', 1);
+
+        $invitations = $screen->get('invitations');
+        $this->assertSame('Beto', $invitations[0]['inviter'] ?? null);
+
+        $screen->call('acceptInvitation', 'invitation-1');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/households/invitations/invitation-1/accept'));
+    }
+
+    public function test_a_declined_invitation_is_removed_from_the_list(): void
+    {
+        $this->connect();
+
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households' => Http::response(['data' => [
+                ['id' => 'household-1', 'name' => 'Casa de Ana'],
+            ]]),
+            '*/api/v1/households/configuration' => Http::response(['data' => ['modules' => []]]),
+            '*/api/v1/households/invitations/*' => Http::response(['data' => ['id' => 'invitation-1']]),
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => ['enabled_modules' => []]]),
+            '*/api/v1/households/household-1' => Http::response(['data' => [
+                'id' => 'household-1', 'name' => 'Casa de Ana', 'members' => [],
+            ]]),
+        ]);
+
+        $screen = Native::test(House::class)->call('declineInvitation', 'invitation-1');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_ends_with($request->url(), '/households/invitations/invitation-1'));
+
+        $this->assertSame(0, $screen->get('invitationCount'));
+    }
+
     public function test_without_a_session_it_asks_to_sign_in(): void
     {
         $this->connect(token: null);
@@ -159,6 +228,7 @@ class HouseScreenTest extends TestCase
         // "Casa de Ana" seguiría matcheando primero.
         Http::fake([
             '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households/invitations' => Http::response(['data' => []]),
             '*/api/v1/households/configuration' => Http::response(['data' => [
                 'modules' => [['key' => 'economy', 'label' => 'Economía']],
             ]]),

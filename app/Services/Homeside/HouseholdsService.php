@@ -114,6 +114,39 @@ final class HouseholdsService
     }
 
     /**
+     * Invitaciones pendientes dirigidas al email del usuario.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function invitations(): array
+    {
+        return array_values(Session::data(
+            $this->session->client()->get('/households/invitations'),
+        ));
+    }
+
+    public function acceptInvitation(string $invitationId): void
+    {
+        Session::data(
+            $this->session->client()->post('/households/invitations/'.$invitationId.'/accept'),
+        );
+    }
+
+    /**
+     * Rechazar es cancelar la propia invitación.
+     *
+     * No hay endpoint de "reject": `CancelInvitation` autoriza por email, así
+     * que el invitado puede cancelar la suya con el mismo DELETE con el que un
+     * admin cancela una enviada.
+     */
+    public function declineInvitation(string $invitationId): void
+    {
+        Session::data(
+            $this->session->client()->delete('/households/invitations/'.$invitationId),
+        );
+    }
+
+    /**
      * Detalle de un hogar: miembros, capacidades y datos de cabecera.
      *
      * @return array<string, mixed>

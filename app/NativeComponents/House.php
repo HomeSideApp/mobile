@@ -55,6 +55,11 @@ final class House extends NativeComponent
     /** @var list<array{key: string, label: string, enabled: bool}> */
     public array $modules = [];
 
+    /** @var list<array<string, mixed>> */
+    public array $invitations = [];
+
+    public int $invitationCount = 0;
+
     /** @var list<string> */
     private array $enabledModules = [];
 
@@ -72,6 +77,21 @@ final class House extends NativeComponent
             (new LocaleService)->apply();
 
             $households = app(HouseholdsService::class);
+
+            // Las invitaciones se cargan antes de mirar el hogar activo: alguien
+            // recién invitado no tiene hogar y aun así tiene que ver el aviso.
+            // Si esa llamada falla, la pantalla sigue: es información secundaria
+            // y no puede tumbar el hogar. Sólo la falta de sesión se propaga.
+            try {
+                $this->applyInvitations($households->invitations());
+            } catch (\Throwable $exception) {
+                // Sólo la falta de sesión corta la pantalla; cualquier otra falla
+                // deja la sección de invitaciones vacía.
+                if ($exception instanceof HomesideException && $exception->requiresLogin()) {
+                    throw $exception;
+                }
+            }
+
             $active = $households->active();
 
             if ($active === null) {
@@ -130,6 +150,56 @@ final class House extends NativeComponent
         if ($this->membersCount === 0) {
             $this->membersCount = count($this->members);
         }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $invitations
+     */
+    private function applyInvitations(array $invitations): void
+    {
+        $this->invitations = array_values(array_map(function (array $invitation): array {
+            $household = is_array($invitation['household'] ?? null) ? $invitation['household'] : [];
+            $inviter = is_array($invitation['inviter'] ?? null) ? $invitation['inviter'] : [];
+
+            return [
+                'id' => (string) ($invitation['id'] ?? ''),
+                'household' => is_string($household['name'] ?? null) ? $household['name'] : '',
+                'inviter' => is_string($inviter['name'] ?? null) ? $inviter['name'] : '',
+                'expires' => $this->month($invitation['expires_at'] ?? null),
+            ];
+        }, array_filter($invitations, 'is_array')));
+
+        $this->invitationCount = count($this->invitations);
+    }
+
+    public function acceptInvitation(string $invitationId): void
+    {
+        $this->respondToInvitation(fn (HouseholdsService $service) => $service->acceptInvitation($invitationId));
+    }
+
+    public function declineInvitation(string $invitationId): void
+    {
+        $this->respondToInvitation(fn (HouseholdsService $service) => $service->declineInvitation($invitationId));
+    }
+
+    /**
+     * Aceptar o rechazar cambian las invitaciones y, al aceptar, el hogar: se
+     * recarga la pantalla entera en vez de parchear el estado a mano.
+     */
+    private function respondToInvitation(callable $action): void
+    {
+        $this->error = null;
+
+        try {
+            $action(app(HouseholdsService::class));
+        } catch (HomesideException $exception) {
+            $this->needsLogin = $exception->requiresLogin();
+            $this->error = $exception->getMessage();
+
+            return;
+        }
+
+        $this->load();
     }
 
     /**

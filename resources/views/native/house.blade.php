@@ -116,6 +116,43 @@
                 </native:column>
             @endif
 
+            {{-- Invitaciones pendientes: se muestran aunque no haya hogar activo,
+                 que es justo el caso de alguien recién invitado. --}}
+            @if ($invitations !== [])
+                <native:column class="w-full gap-3 rounded-lg bg-theme-surface p-4">
+                    <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                        {{ trans_choice('app.house.invitations_count', $invitationCount, ['count' => $invitationCount]) }}
+                    </native:text>
+
+                    @foreach ($invitations as $invitation)
+                        <native:column class="w-full gap-2 rounded-lg bg-theme-surface-variant p-3">
+                            <native:text class="text-sm font-medium text-theme-on-surface">
+                                {{ $invitation['household'] }}
+                            </native:text>
+                            @if ($invitation['inviter'])
+                                <native:text class="text-xs text-theme-on-surface-variant">
+                                    {{ __('app.house.invited_by', ['name' => $invitation['inviter']]) }}
+                                </native:text>
+                            @endif
+
+                            <native:row class="w-full items-center gap-2">
+                                <native:button
+                                    :label="__('app.house.invitation_accept')"
+                                    class="flex-1"
+                                    @press="acceptInvitation({{ json_encode($invitation['id']) }})"
+                                />
+                                <native:button
+                                    :label="__('app.house.invitation_decline')"
+                                    variant="secondary"
+                                    class="flex-1"
+                                    @press="declineInvitation({{ json_encode($invitation['id']) }})"
+                                />
+                            </native:row>
+                        </native:column>
+                    @endforeach
+                </native:column>
+            @endif
+
         </native:column>
     </native:scroll-view>
 </native:column>
