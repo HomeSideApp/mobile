@@ -5,6 +5,7 @@ namespace App\Providers;
 use Homeside\ApkUpdater\ApkUpdaterServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Providers\CameraServiceProvider;
+use Native\Mobile\Providers\ShareServiceProvider;
 use Native\Mobile\UI\NativeUIServiceProvider;
 
 class NativeServiceProvider extends ServiceProvider
@@ -40,8 +41,7 @@ class NativeServiceProvider extends ServiceProvider
             NativeUIServiceProvider::class,
             ApkUpdaterServiceProvider::class,
             CameraServiceProvider::class,
-            \Native\Mobile\Providers\ShareServiceProvider::class,
-        
+            ShareServiceProvider::class,
 
         ];
     }

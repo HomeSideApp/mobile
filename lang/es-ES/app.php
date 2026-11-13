@@ -74,6 +74,8 @@ return [
         'invite_link_shared' => 'Link de invitación listo para compartir.',
         'invite_share_title' => 'Invitación a un hogar de HomeSide',
         'invite_share_text' => 'Te invito a :household en HomeSide',
+        'manage_homes' => 'Cambiar o crear hogar',
+        'manage_homes_hint' => 'Tus hogares y el alta de uno nuevo',
         'invitations_count' => '{1} :count invitación|[2,*] :count invitaciones',
         'invited_by' => 'Te invitó :name',
         'invitation_accept' => 'Aceptar',

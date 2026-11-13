@@ -277,6 +277,21 @@ final class House extends NativeComponent
         }
     }
 
+    /**
+     * Crear hogar vive en el selector, al que se llega por la acción de la barra.
+     * Esa acción es un ⋮ en Android y no se descubre sola, así que Casa también
+     * ofrece el camino: es la pantalla donde alguien busca "mi casa".
+     */
+    public function openHouseholds(): void
+    {
+        $this->navigate('/households');
+    }
+
+    public function createHousehold(): void
+    {
+        $this->navigate('/households/create');
+    }
+
     public function openInvite(): void
     {
         $this->inviteOpen = true;

@@ -210,6 +210,37 @@ class HouseScreenTest extends TestCase
         $this->assertSame(0, $screen->get('invitationCount'));
     }
 
+    public function test_casa_offers_the_way_to_create_a_home(): void
+    {
+        $this->connect();
+
+        // Sin hogar activo: el estado vacío tiene que ofrecer el alta. Antes sólo
+        // se llegaba por la acción de la barra, que en Android es un ⋮.
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
+            '*/api/v1/households' => Http::response(['data' => []]),
+            '*/api/v1/households/invitations' => Http::response(['data' => []]),
+        ]);
+
+        $screen = Native::test(House::class);
+
+        $screen->assertSee(__('app.households.create'));
+        $screen->call('createHousehold');
+        $screen->assertNavigatedTo('/households/create');
+    }
+
+    public function test_with_a_household_it_offers_the_homes_selector(): void
+    {
+        $this->connect();
+        $this->fakeHouse();
+
+        $screen = Native::test(House::class);
+
+        $screen->assertSee(__('app.house.manage_homes'));
+        $screen->call('openHouseholds');
+        $screen->assertNavigatedTo('/households');
+    }
+
     public function test_without_a_session_it_asks_to_sign_in(): void
     {
         $this->connect(token: null);

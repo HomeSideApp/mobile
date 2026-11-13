@@ -72,6 +72,8 @@ return [
         'invite_link_shared' => 'Invitation link ready to share.',
         'invite_share_title' => 'Invitation to a HomeSide home',
         'invite_share_text' => 'Join :household on HomeSide',
+        'manage_homes' => 'Switch or create a home',
+        'manage_homes_hint' => 'Your homes and creating a new one',
         'invitations_count' => '{1} :count invitation|[2,*] :count invitations',
         'invited_by' => ':name invited you',
         'invitation_accept' => 'Accept',

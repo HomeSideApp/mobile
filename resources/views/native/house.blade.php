@@ -19,6 +19,11 @@
                     <native:text class="text-center text-sm text-theme-on-surface-variant">
                         {{ __('app.house.empty_subtitle') }}
                     </native:text>
+                    <native:button
+                        :label="__('app.households.create')"
+                        class="w-full"
+                        @press="createHousehold"
+                    />
                 </native:column>
             @else
                 {{-- Cabecera del hogar --}}
@@ -138,6 +143,24 @@
                         <native:text class="text-sm text-theme-on-surface-variant">{{ __('app.house.no_members') }}</native:text>
                     @endforelse
                 </native:column>
+            @endif
+
+            {{-- Acceso al selector: es donde se cambia y se crea hogar. --}}
+            @if ($householdId !== null)
+                <native:pressable class="w-full rounded-lg bg-theme-surface p-4" @press="openHouseholds">
+                    <native:row class="w-full items-center gap-3">
+                        <native:icon ios="square.stack.3d.up" android="layers" :size="18" class="text-theme-primary" />
+                        <native:column class="flex-1 gap-1">
+                            <native:text class="text-sm font-medium text-theme-on-surface">
+                                {{ __('app.house.manage_homes') }}
+                            </native:text>
+                            <native:text class="text-xs text-theme-on-surface-variant">
+                                {{ __('app.house.manage_homes_hint') }}
+                            </native:text>
+                        </native:column>
+                        <native:icon ios="chevron.right" android="chevron_right" :size="14" class="text-theme-on-surface-variant" />
+                    </native:row>
+                </native:pressable>
             @endif
 
             {{-- Invitaciones pendientes: se muestran aunque no haya hogar activo,
