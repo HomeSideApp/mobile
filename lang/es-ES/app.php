@@ -67,6 +67,7 @@ return [
         'title' => 'Concepto',
         'title_placeholder' => 'Supermercado, nafta…',
         'amount' => 'Importe (:currency)',
+        'account' => 'Cuenta',
         'place' => 'Local',
         'date' => 'Fecha',
         'date_hint' => 'AAAA-MM-DD',

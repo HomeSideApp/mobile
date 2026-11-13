@@ -94,6 +94,39 @@ class ExpenseFormTest extends TestCase
         $this->assertNotSame('', (string) $request->header('Idempotency-Key')[0] ?? '');
     }
 
+    public function test_it_offers_the_users_accounts_and_sends_the_chosen_one(): void
+    {
+        $this->connect();
+        $this->fakeEconomy();
+
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households' => Http::response(['data' => [['id' => 'household-1', 'name' => 'Casa']]]),
+            '*/api/v1/households/household-1' => Http::response(['data' => [
+                'id' => 'household-1', 'name' => 'Casa',
+                'members' => [['id' => 'member-1', 'user' => ['id' => 'user-1', 'name' => 'Ana']]],
+            ]]),
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => ['enabled_modules' => ['economy']]]),
+            '*/api/v1/households/household-1/economy/overview*' => Http::response(['data' => ['currency' => 'EUR']]),
+            '*/api/v1/economy/me/accounts' => Http::response(['data' => [
+                ['id' => 'account-1', 'name' => 'Cuenta corriente'],
+            ]]),
+            '*/api/v1/households/household-1/economy/transactions' => Http::response(['data' => ['id' => 't-1']], 201),
+        ]);
+
+        $screen = Native::test(ExpenseForm::class)
+            ->set('title', 'Mercadona')
+            ->set('amount', '9.99')
+            ->call('setAccount', 'Cuenta corriente')
+            ->call('save');
+
+        $this->assertNull($screen->get('error'));
+        $this->assertSame('account-1', $screen->get('accountId'));
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && $request['account_id'] === 'account-1');
+    }
+
     public function test_a_zero_amount_never_reaches_the_server(): void
     {
         $this->connect();

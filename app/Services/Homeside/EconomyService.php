@@ -81,6 +81,18 @@ final class EconomyService
     }
 
     /**
+     * Cuentas del usuario (endpoint agregado a la API para esto).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function accounts(): array
+    {
+        return array_values(Session::data(
+            $this->session->client()->get('/economy/me/accounts'),
+        ));
+    }
+
+    /**
      * Sube una foto de ticket y arranca el reconocimiento.
      *
      * @return array<string, mixed>

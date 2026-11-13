@@ -67,6 +67,7 @@ return [
         'title' => 'Concept',
         'title_placeholder' => 'Groceries, fuel…',
         'amount' => 'Amount (:currency)',
+        'account' => 'Account',
         'place' => 'Place',
         'date' => 'Date',
         'date_hint' => 'YYYY-MM-DD',

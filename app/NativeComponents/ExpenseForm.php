@@ -37,6 +37,11 @@ final class ExpenseForm extends NativeComponent
 
     public string $scope = 'home';
 
+    public string $accountId = '';
+
+    /** @var list<array{value: string, label: string}> */
+    public array $accountOptions = [];
+
     public bool $loading = true;
 
     public bool $saving = false;
@@ -75,6 +80,8 @@ final class ExpenseForm extends NativeComponent
             $overview = $economy->overview($householdId);
             $this->currency = is_string($overview['currency'] ?? null) ? $overview['currency'] : 'EUR';
 
+            $this->loadAccounts($economy);
+
             if ($this->transactionId === null || $this->transactionId === '') {
                 return;
             }
@@ -90,6 +97,9 @@ final class ExpenseForm extends NativeComponent
             $minor = (int) ($transaction['amount_minor'] ?? 0);
             $this->amount = number_format($minor / 100, 2, '.', '');
 
+            $account = is_array($transaction['account'] ?? null) ? $transaction['account'] : [];
+            $this->accountId = is_string($account['id'] ?? null) ? $account['id'] : '';
+
             $occurred = $transaction['occurred_at'] ?? null;
             $this->occurredAt = is_string($occurred) ? substr($occurred, 0, 10) : $this->occurredAt;
         } catch (HomesideException $exception) {
@@ -97,6 +107,34 @@ final class ExpenseForm extends NativeComponent
         } finally {
             $this->loading = false;
         }
+    }
+
+    private function loadAccounts(EconomyService $economy): void
+    {
+        try {
+            $accounts = $economy->accounts();
+        } catch (HomesideException) {
+            // Sin permiso de cuentas el campo simplemente no se muestra.
+            return;
+        }
+
+        $this->accountOptions = array_values(array_map(fn (array $account): array => [
+            'value' => (string) ($account['id'] ?? ''),
+            'label' => (string) ($account['name'] ?? ''),
+        ], array_filter($accounts, 'is_array')));
+    }
+
+    public function setAccount(?string $label = null): void
+    {
+        foreach ($this->accountOptions as $option) {
+            if ($option['label'] === $label) {
+                $this->accountId = $option['value'];
+
+                return;
+            }
+        }
+
+        $this->accountId = '';
     }
 
     public function setType(string $type): void
@@ -141,6 +179,10 @@ final class ExpenseForm extends NativeComponent
             'place' => trim($this->place) !== '' ? trim($this->place) : null,
             'notes' => trim($this->notes) !== '' ? trim($this->notes) : null,
         ];
+
+        if ($this->accountId !== '') {
+            $payload['account_id'] = $this->accountId;
+        }
 
         if ($householdId !== null) {
             $memberId = app(HouseholdsService::class)->myMemberId($householdId);

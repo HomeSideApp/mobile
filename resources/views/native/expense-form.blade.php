@@ -36,6 +36,15 @@
                     keyboard="decimal"
                     native:model.debounce.300ms="amount"
                 />
+                @if ($accountOptions !== [])
+                    <native:select
+                        :label="__('app.expense_form.account')"
+                        :value="collect($accountOptions)->firstWhere('value', $accountId)['label'] ?? ''"
+                        :options="array_column($accountOptions, 'label')"
+                        @change="setAccount"
+                    />
+                @endif
+
                 <native:outlined-text-input
                     :label="__('app.expense_form.place')"
                     native:model.debounce.300ms="place"
