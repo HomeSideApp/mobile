@@ -38,16 +38,6 @@ final class ListsService
     }
 
     /**
-     * @return array<int, array<string, mixed>>
-     */
-    public function households(): array
-    {
-        return array_values(Session::data(
-            $this->session->client()->get('/households'),
-        ));
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function show(string $listId, ?string $householdId = null): array

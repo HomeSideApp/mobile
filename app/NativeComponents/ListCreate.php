@@ -3,7 +3,7 @@
 namespace App\NativeComponents;
 
 use App\Exceptions\HomesideException;
-use App\Services\Homeside\AuthService;
+use App\Services\Homeside\HouseholdsService;
 use App\Services\Homeside\ListsService;
 use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
@@ -31,20 +31,10 @@ final class ListCreate extends NativeComponent
         (new LocaleService)->apply();
 
         try {
-            $me = (new AuthService)->me();
-            $this->householdId = is_string($me['active_household_id'] ?? null)
-                ? $me['active_household_id']
-                : null;
+            $households = new HouseholdsService;
 
-            if ($this->householdId !== null) {
-                foreach ((new ListsService)->households() as $household) {
-                    if (($household['id'] ?? null) === $this->householdId) {
-                        $this->householdName = is_string($household['name'] ?? null)
-                            ? $household['name']
-                            : null;
-                    }
-                }
-            }
+            $this->householdId = $households->activeId();
+            $this->householdName = $households->name($this->householdId);
 
             $this->scope = $this->householdId !== null ? 'household' : 'personal';
         } catch (HomesideException) {

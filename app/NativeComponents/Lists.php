@@ -4,7 +4,7 @@ namespace App\NativeComponents;
 
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\AppUpdateChecker;
-use App\Services\Homeside\AuthService;
+use App\Services\Homeside\HouseholdsService;
 use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
 use App\Services\Settings\LocaleService;
@@ -153,15 +153,12 @@ final class Lists extends NativeComponent
         }
 
         try {
-            $me = (new AuthService)->me();
             $lists = new ListsService;
+            $households = new HouseholdsService;
 
-            $this->households = $lists->households();
-            $this->activeHouseholdId = is_string($me['active_household_id'] ?? null)
-                ? $me['active_household_id']
-                : null;
-
-            $this->activeHouseholdName = $this->householdName($this->activeHouseholdId);
+            $this->households = $households->all();
+            $this->activeHouseholdId = $households->activeId();
+            $this->activeHouseholdName = $households->name($this->activeHouseholdId);
             $this->personal = $this->normalizeLists($lists->personal($filters));
 
             $this->householdLists = $this->activeHouseholdId !== null
@@ -192,21 +189,6 @@ final class Lists extends NativeComponent
                 'updated_at' => is_string($list['updated_at'] ?? null) ? $list['updated_at'] : null,
             ];
         }, $lists);
-    }
-
-    private function householdName(?string $householdId): ?string
-    {
-        if ($householdId === null) {
-            return null;
-        }
-
-        foreach ($this->households as $household) {
-            if (($household['id'] ?? null) === $householdId) {
-                return is_string($household['name'] ?? null) ? $household['name'] : null;
-            }
-        }
-
-        return null;
     }
 
     public function render(): View
