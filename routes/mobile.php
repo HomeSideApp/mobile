@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplyAppearance;
+use App\NativeComponents\Expenses;
 use App\NativeComponents\House;
 use App\NativeComponents\HouseCreate;
 use App\NativeComponents\Households;
@@ -42,6 +43,7 @@ Route::middleware(ApplyAppearance::class)->group(function (): void {
     Route::nativeGroup(AppTabsLayout::class, function (): void {
         Route::native('/lists', Lists::class)->name('lists');
         Route::native('/recipes', Recipes::class)->name('recipes');
+        Route::native('/expenses', Expenses::class)->name('expenses');
         Route::native('/house', House::class)->name('house');
         Route::native('/profile', Profile::class)->name('profile');
     });

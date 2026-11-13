@@ -16,6 +16,7 @@ return [
         'lists' => 'Lists',
         'recipes' => 'Recipes',
         'house' => 'Home',
+        'economy' => 'Money',
         'profile' => 'Profile',
     ],
 
@@ -42,6 +43,19 @@ return [
         'title' => 'Your homes',
         'subtitle' => 'Choose which home to work in',
         'create' => 'Create home',
+    ],
+
+    'expenses' => [
+        'this_month' => 'This month',
+        'spent' => 'Spent',
+        'income' => 'Income',
+        'balance' => 'Balance',
+        'by_place' => 'Where it went',
+        'scope_home' => 'Home',
+        'scope_personal' => 'Personal',
+        'no_place' => 'No place',
+        'module_off_title' => 'Money is not enabled',
+        'module_off_hint' => 'Turn it on from the household modules on the web.',
     ],
 
     'house' => [

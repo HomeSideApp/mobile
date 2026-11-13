@@ -72,6 +72,7 @@ final class AppTabsLayout extends NativeLayout
             ->textColor(theme('on-surface-variant'))
             ->add(Tab::link((string) __('app.tabs.lists'), '/lists', ios: 'cart.fill', android: 'shopping_cart'))
             ->add(Tab::link((string) __('app.tabs.recipes'), '/recipes', ios: 'book.fill', android: 'menu_book'))
+            ->add(Tab::link((string) __('app.tabs.economy'), '/expenses', ios: 'creditcard.fill', android: 'credit_card'))
             ->add(Tab::link((string) __('app.tabs.house'), '/house', ios: 'house.fill', android: 'home'))
             ->add(Tab::link((string) __('app.tabs.profile'), '/profile', ios: 'person.fill', android: 'person'));
     }

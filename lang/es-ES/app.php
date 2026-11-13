@@ -16,6 +16,7 @@ return [
         'lists' => 'Listas',
         'recipes' => 'Recetas',
         'house' => 'Casa',
+        'economy' => 'Gastos',
         'profile' => 'Perfil',
     ],
 
@@ -42,6 +43,19 @@ return [
         'title' => 'Tus hogares',
         'subtitle' => 'Elegí en qué hogar trabajar',
         'create' => 'Crear hogar',
+    ],
+
+    'expenses' => [
+        'this_month' => 'Este mes',
+        'spent' => 'Gastado',
+        'income' => 'Ingresos',
+        'balance' => 'Balance',
+        'by_place' => 'Dónde se gastó',
+        'scope_home' => 'Hogar',
+        'scope_personal' => 'Personal',
+        'no_place' => 'Sin local',
+        'module_off_title' => 'Economía no está activada',
+        'module_off_hint' => 'Se habilita desde los módulos del hogar en la web.',
     ],
 
     'house' => [
