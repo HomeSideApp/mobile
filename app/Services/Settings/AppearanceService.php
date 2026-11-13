@@ -35,11 +35,6 @@ final class AppearanceService
      * así que acá se limpia igual pero por las dudas: es barato y evita depender
      * de ese detalle interno si algún día cambia.
      */
-    /** Último merge de esta ejecución, para el panel de diagnóstico. */
-    private static ?string $lastApplied = null;
-
-    private static ?int $lastAppliedAt = null;
-
     public function __construct(
         private readonly SettingsRepository $settings = new SettingsRepository,
     ) {}
@@ -124,22 +119,6 @@ final class AppearanceService
         if (class_exists(TailwindParser::class)) {
             TailwindParser::clearCache();
         }
-
-        self::$lastApplied = $chosen;
-        self::$lastAppliedAt = time();
-    }
-
-    /**
-     * Último merge de esta ejecución. Lo usa el panel de diagnóstico temporal
-     * de Perfil: dice si el tema se aplicó y hace cuánto.
-     */
-    public static function lastAppliedLabel(): string
-    {
-        if (self::$lastAppliedAt === null) {
-            return 'never in this process';
-        }
-
-        return self::$lastApplied.' · '.max(0, time() - self::$lastAppliedAt).'s ago';
     }
 
     /**
@@ -156,7 +135,7 @@ final class AppearanceService
      *
      * @return array{light: array<string, string>, dark: array<string, string>}
      */
-    public function palettes(): array
+    private function palettes(): array
     {
         $file = is_file(config_path('native-ui.php'))
             ? require config_path('native-ui.php')

@@ -163,18 +163,6 @@
                 </native:column>
             @endif
 
-            {{-- TEMPORAL: diagnóstico de apariencia. Borrar cuando el bug esté cerrado. --}}
-            <native:column class="w-full gap-1 rounded-lg bg-theme-surface-variant p-4">
-                <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">Diagnostic</native:text>
-                @foreach ($this->diagnostics() as $line)
-                    <native:row class="w-full items-center gap-2">
-                        <native:text class="text-xs text-theme-on-surface-variant">{{ $line['label'] }}</native:text>
-                        <native:spacer />
-                        <native:text class="text-xs text-theme-on-surface">{{ $line['value'] }}</native:text>
-                    </native:row>
-                @endforeach
-            </native:column>
-
             <native:text class="text-center text-xs text-theme-on-surface-variant">
                 {{ __('app.profile.footer', ['version' => config('nativephp.version')]) }}
             </native:text>

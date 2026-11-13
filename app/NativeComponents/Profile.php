@@ -11,9 +11,7 @@ use App\Services\Settings\LocaleService;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
-use Native\Mobile\Edge\TailwindParser;
 use Native\Mobile\Facades\Browser;
-use Native\Mobile\Facades\System;
 
 /**
  * Perfil: datos de la cuenta, servidor actual, cierre de sesión y cambio de
@@ -139,55 +137,6 @@ final class Profile extends NativeComponent
      * El select devuelve la etiqueta traducida; se mapea contra las mismas
      * traducciones con las que se armó la lista.
      */
-    /**
-     * Panel TEMPORAL de diagnóstico del cambio de apariencia.
-     *
-     * Existe porque el bug no se reproduce en el emulador y en el dispositivo
-     * no hay adb disponible: en vez de leer logcat, la pantalla muestra qué
-     * paleta está viendo PHP en este momento. Se borra cuando el problema esté
-     * cerrado.
-     *
-     * @return list<array{label: string, value: string}>
-     */
-    public function diagnostics(): array
-    {
-        $parser = class_exists(TailwindParser::class)
-            ? TailwindParser::parse('bg-theme-background')
-            : [];
-
-        $lightBg = is_string($parser['bg'] ?? null) ? $parser['bg'] : '—';
-        $darkBg = is_string($parser['dark']['bg'] ?? null) ? $parser['dark']['bg'] : $lightBg;
-
-        // El renderer elige el hex del companion `dark` cuando Android está en
-        // modo oscuro: es la variable que decide qué se ve, y sin ella un
-        // diagnóstico de color queda a medias.
-        // Comparar el archivo con la config viva delata una config cacheada con
-        // las paletas colapsadas, que es lo que deja la app trabada.
-        $file = (new AppearanceService)->palettes();
-
-        $systemDark = false;
-
-        try {
-            $systemDark = System::isDarkMode();
-        } catch (\Throwable) {
-            // Sin bridge (tests, arranque sin runtime) no hay dato.
-        }
-
-        return [
-            ['label' => 'version', 'value' => (string) config('nativephp.version')],
-            ['label' => 'appearance', 'value' => (new AppearanceService)->current()],
-            ['label' => 'system dark', 'value' => $systemDark ? 'yes' : 'no'],
-            ['label' => 'body bg', 'value' => $lightBg],
-            ['label' => 'body bg dark', 'value' => $darkBg],
-            ['label' => 'body bg used', 'value' => $systemDark ? $darkBg : $lightBg],
-            ['label' => 'file light bg', 'value' => (string) ($file['light']['background'] ?? '—')],
-            ['label' => 'file dark bg', 'value' => (string) ($file['dark']['background'] ?? '—')],
-            ['label' => 'live light bg', 'value' => (string) config('native-ui.theme.light.background')],
-            ['label' => 'live dark bg', 'value' => (string) config('native-ui.theme.dark.background')],
-            ['label' => 'last merge', 'value' => AppearanceService::lastAppliedLabel()],
-        ];
-    }
-
     public function setAppearanceOption(?string $label = null): void
     {
         $label = $label ?? $this->appearanceValue;
