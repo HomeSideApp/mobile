@@ -9,7 +9,7 @@ use App\Support\Concerns\HasHouseholdSwitcher;
 use Carbon\CarbonImmutable;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
-use Native\Mobile\Facades\Share;
+use Native\Mobile\Facades\Browser;
 
 /**
  * Hogar activo: quiénes viven ahí, cómo viene la semana y qué módulos están
@@ -327,8 +327,16 @@ final class House extends NativeComponent
     }
 
     /**
-     * Crea un link y lo comparte con el sheet del sistema. El link lo arma el
-     * servidor: la app no compone URLs de invitación.
+     * Crea un link de invitación y lo abre en el navegador.
+     *
+     * Iba a usar el share sheet, pero `Share.Url` **no está implementado** en el
+     * bridge de NativePHP 4.7.0 (ni Android ni iOS): el `nativephp_call` responde
+     * `Function 'Share.Url' not found`, así que la hoja nunca aparecía. Mientras
+     * no exista un plugin que lo implemente, se abre la página de invitación del
+     * servidor, donde el link se puede copiar o compartir con las herramientas
+     * del propio navegador.
+     *
+     * El link lo arma el servidor: la app no compone URLs de invitación.
      */
     public function shareInviteLink(): void
     {
@@ -359,11 +367,7 @@ final class House extends NativeComponent
             return;
         }
 
-        Share::url(
-            (string) __('app.house.invite_share_title'),
-            (string) __('app.house.invite_share_text', ['household' => $this->householdName]),
-            $url,
-        );
+        Browser::open($url);
 
         $this->inviteNotice = (string) __('app.house.invite_link_shared');
     }
