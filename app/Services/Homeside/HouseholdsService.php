@@ -135,6 +135,32 @@ final class HouseholdsService
     }
 
     /**
+     * Invita a alguien por email.
+     *
+     * @return array<string, mixed>
+     */
+    public function inviteByEmail(string $householdId, string $email): array
+    {
+        return Session::data(
+            $this->session->client()->post('/households/'.$householdId.'/invite', [
+                'email' => $email,
+            ]),
+        );
+    }
+
+    /**
+     * Crea un link de invitación reutilizable para el hogar.
+     *
+     * @return array<string, mixed>
+     */
+    public function createInviteLink(string $householdId): array
+    {
+        return Session::data(
+            $this->session->client()->post('/households/'.$householdId.'/invite-links', []),
+        );
+    }
+
+    /**
      * Invitaciones pendientes dirigidas al email del usuario.
      *
      * @return array<int, array<string, mixed>>

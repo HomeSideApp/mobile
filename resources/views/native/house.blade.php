@@ -94,6 +94,30 @@
                         {{ __('app.house.members') }}
                     </native:text>
 
+                    @if ($householdId !== null)
+                        <native:row class="w-full items-center gap-2">
+                            <native:button
+                                :label="__('app.house.invite_by_email')"
+                                class="flex-1"
+                                @press="openInvite"
+                            />
+                            <native:button
+                                :label="__('app.house.invite_share')"
+                                variant="secondary"
+                                class="flex-1"
+                                @press="shareInviteLink"
+                            />
+                        </native:row>
+                    @endif
+
+                    @if ($inviteNotice)
+                        <native:text class="text-xs text-theme-primary">{{ $inviteNotice }}</native:text>
+                    @endif
+
+                    @if ($inviteError && ! $inviteOpen)
+                        <native:text class="text-xs text-theme-destructive">{{ $inviteError }}</native:text>
+                    @endif
+
                     @forelse ($members as $member)
                         <native:row class="w-full items-center gap-3">
                             <native:column class="h-8 w-8 items-center justify-center rounded-full bg-theme-surface-variant">
@@ -155,4 +179,43 @@
 
         </native:column>
     </native:scroll-view>
+
+    {{-- Invitar por email: hoja con un solo campo. --}}
+    <native:bottom-sheet :visible="$inviteOpen" @dismiss="closeInvite" detents="medium">
+        <native:column class="w-full gap-3 p-5">
+            <native:text class="text-base font-semibold text-theme-on-surface">
+                {{ __('app.house.invite_title') }}
+            </native:text>
+            <native:text class="text-xs text-theme-on-surface-variant">
+                {{ __('app.house.invite_hint') }}
+            </native:text>
+
+            <native:outlined-text-input
+                :label="__('app.house.invite_email_label')"
+                keyboard="email"
+                autocomplete="email"
+                native:model.debounce.300ms="inviteEmail"
+                @submit="sendInvite"
+            />
+
+            @if ($inviteError)
+                <native:text class="text-xs text-theme-destructive">{{ $inviteError }}</native:text>
+            @endif
+
+            <native:row class="w-full items-center gap-2">
+                <native:button
+                    :label="__('app.common.cancel')"
+                    variant="secondary"
+                    class="flex-1"
+                    @press="closeInvite"
+                />
+                <native:button
+                    :label="__('app.house.invite_send')"
+                    :loading="$inviting"
+                    class="flex-1"
+                    @press="sendInvite"
+                />
+            </native:row>
+        </native:column>
+    </native:bottom-sheet>
 </native:column>

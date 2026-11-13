@@ -9,6 +9,7 @@ use App\Support\Concerns\HasHouseholdSwitcher;
 use Carbon\CarbonImmutable;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
+use Native\Mobile\Facades\Share;
 
 /**
  * Hogar activo: quiénes viven ahí, cómo viene la semana y qué módulos están
@@ -59,6 +60,16 @@ final class House extends NativeComponent
     public array $invitations = [];
 
     public int $invitationCount = 0;
+
+    public bool $inviteOpen = false;
+
+    public string $inviteEmail = '';
+
+    public ?string $inviteError = null;
+
+    public ?string $inviteNotice = null;
+
+    public bool $inviting = false;
 
     /** @var list<string> */
     private array $enabledModules = [];
@@ -264,6 +275,97 @@ final class House extends NativeComponent
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    public function openInvite(): void
+    {
+        $this->inviteOpen = true;
+        $this->inviteEmail = '';
+        $this->inviteError = null;
+        $this->inviteNotice = null;
+    }
+
+    public function closeInvite(): void
+    {
+        $this->inviteOpen = false;
+        $this->inviteEmail = '';
+        $this->inviteError = null;
+    }
+
+    public function sendInvite(): void
+    {
+        $this->inviteError = null;
+        $this->inviteNotice = null;
+
+        $email = trim($this->inviteEmail);
+
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->inviteError = (string) __('app.house.invite_email_invalid');
+
+            return;
+        }
+
+        if ($this->householdId === null) {
+            return;
+        }
+
+        $this->inviting = true;
+
+        try {
+            app(HouseholdsService::class)->inviteByEmail($this->householdId, $email);
+        } catch (HomesideException $exception) {
+            $this->inviteError = $exception->getMessage();
+
+            return;
+        } finally {
+            $this->inviting = false;
+        }
+
+        $this->inviteOpen = false;
+        $this->inviteEmail = '';
+        $this->inviteNotice = (string) __('app.house.invite_sent', ['email' => $email]);
+    }
+
+    /**
+     * Crea un link y lo comparte con el sheet del sistema. El link lo arma el
+     * servidor: la app no compone URLs de invitación.
+     */
+    public function shareInviteLink(): void
+    {
+        $this->inviteError = null;
+        $this->inviteNotice = null;
+
+        if ($this->householdId === null) {
+            return;
+        }
+
+        $this->inviting = true;
+
+        try {
+            $link = app(HouseholdsService::class)->createInviteLink($this->householdId);
+        } catch (HomesideException $exception) {
+            $this->inviteError = $exception->getMessage();
+
+            return;
+        } finally {
+            $this->inviting = false;
+        }
+
+        $url = $link['url'] ?? null;
+
+        if (! is_string($url) || $url === '') {
+            $this->inviteError = (string) __('app.house.invite_link_failed');
+
+            return;
+        }
+
+        Share::url(
+            (string) __('app.house.invite_share_title'),
+            (string) __('app.house.invite_share_text', ['household' => $this->householdName]),
+            $url,
+        );
+
+        $this->inviteNotice = (string) __('app.house.invite_link_shared');
     }
 
     public function goToLogin(): void
