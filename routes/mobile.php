@@ -11,6 +11,7 @@ use App\NativeComponents\Login;
 use App\NativeComponents\Profile;
 use App\NativeComponents\Recipes;
 use App\NativeComponents\ServerSetup;
+use App\NativeComponents\Start;
 use App\NativeLayouts\AppStackLayout;
 use App\NativeLayouts\AppTabsLayout;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,9 @@ use Illuminate\Support\Facades\Route;
 // cada pantalla resuelve `bg-theme-*` a hex al parsearse, así que esta
 // escritura tiene que ser la última antes del render.
 Route::middleware(ApplyAppearance::class)->group(function (): void {
+    // Arranque: decide setup / login / listas y se reemplaza en la pila.
+    Route::native('/start', Start::class)->name('start');
+
     Route::native('/server-setup', ServerSetup::class)->name('server.setup');
     Route::native('/login', Login::class)->name('login');
 
