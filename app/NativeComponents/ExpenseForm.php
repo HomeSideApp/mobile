@@ -128,16 +128,35 @@ final class ExpenseForm extends NativeComponent
 
         $householdId = $this->householdId();
 
+        // La API de economía trabaja en **unidades menores** (`amount_minor`) y,
+        // en un gasto compartido, exige `participants`. Yo mandaba `amount` y sin
+        // participantes, así que el servidor respondía 422.
         $payload = [
             'type' => $this->type,
             'scope' => $householdId !== null ? 'shared' : 'personal',
             'currency' => $this->currency,
             'title' => $title,
-            'amount' => number_format($minor / 100, 2, '.', ''),
+            'amount_minor' => $minor,
             'occurred_at' => $this->occurredAt !== '' ? $this->occurredAt : null,
             'place' => trim($this->place) !== '' ? trim($this->place) : null,
             'notes' => trim($this->notes) !== '' ? trim($this->notes) : null,
         ];
+
+        if ($householdId !== null) {
+            $memberId = app(HouseholdsService::class)->myMemberId($householdId);
+
+            if ($memberId === null) {
+                $this->error = (string) __('app.expense_form.member_missing');
+
+                return;
+            }
+
+            // Un solo participante con reparto igual: el importe entero cae en
+            // quien lo cargó, que es lo que significa "lo pagué yo".
+            $payload['participants'] = [
+                ['household_member_id' => $memberId, 'split_type' => 'equal'],
+            ];
+        }
 
         $this->saving = true;
 

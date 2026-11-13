@@ -34,6 +34,8 @@ final class ExpenseTicket extends NativeComponent
 
     public string $currency = 'EUR';
 
+    public int $amountMinor = 0;
+
     public string $total = '—';
 
     public ?string $place = null;
@@ -140,6 +142,7 @@ final class ExpenseTicket extends NativeComponent
 
         $this->currency = is_string($draft['currency'] ?? null) ? $draft['currency'] : $this->currency;
         $minor = (int) ($draft['amount_minor'] ?? 0);
+        $this->amountMinor = $minor;
         $this->total = $minor > 0 ? Money::format($minor, $this->currency) : '—';
         $this->place = is_string($draft['place'] ?? null) ? $draft['place'] : null;
         $this->date = is_string($draft['occurred_at'] ?? null) ? substr($draft['occurred_at'], 0, 10) : null;
@@ -155,17 +158,38 @@ final class ExpenseTicket extends NativeComponent
         $this->error = null;
         $this->busy = true;
 
+        $householdId = $this->householdId();
+
+        $payload = [
+            'type' => 'expense',
+            'scope' => $householdId !== null ? 'shared' : 'personal',
+            'title' => $this->title ?? (string) __('app.ticket.default_title'),
+            'place' => $this->place,
+            'occurred_at' => $this->date,
+            'currency' => $this->currency,
+            'amount_minor' => $this->amountMinor,
+        ];
+
+        if ($householdId !== null) {
+            $memberId = app(HouseholdsService::class)->myMemberId($householdId);
+
+            if ($memberId === null) {
+                $this->error = (string) __('app.expense_form.member_missing');
+                $this->busy = false;
+
+                return;
+            }
+
+            $payload['participants'] = [
+                ['household_member_id' => $memberId, 'split_type' => 'equal'],
+            ];
+        }
+
         try {
             (new EconomyService)->confirmImport(
-                $this->householdId(),
+                $householdId,
                 $this->importId,
-                [
-                    'type' => 'expense',
-                    'title' => $this->title ?? (string) __('app.ticket.default_title'),
-                    'place' => $this->place,
-                    'occurred_at' => $this->date,
-                    'currency' => $this->currency,
-                ],
+                $payload,
                 'import-confirm:'.$this->importId,
             );
         } catch (HomesideException $exception) {

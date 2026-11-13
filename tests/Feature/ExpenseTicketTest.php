@@ -106,6 +106,10 @@ class ExpenseTicketTest extends TestCase
         Http::fake([
             '*/api/v1/me' => Http::response(['data' => $this->me()]),
             '*/api/v1/households' => Http::response(['data' => [['id' => 'household-1', 'name' => 'Casa']]]),
+            '*/api/v1/households/household-1' => Http::response(['data' => [
+                'id' => 'household-1', 'name' => 'Casa',
+                'members' => [['id' => 'member-1', 'user' => ['id' => 'user-1', 'name' => 'Ana']]],
+            ]]),
             '*/api/v1/households/household-1/economy/imports' => Http::response(['data' => [
                 'id' => 'import-1', 'status' => 'review_required', 'progress' => 100,
                 'draft' => ['amount_minor' => 4235, 'currency' => 'EUR', 'place' => 'Mercadona', 'title' => 'Compra'],
@@ -119,7 +123,9 @@ class ExpenseTicketTest extends TestCase
 
         Http::assertSent(fn ($request): bool => $request->method() === 'POST'
             && str_ends_with($request->url(), '/imports/import-1/confirm')
-            && $request['title'] === 'Compra');
+            && $request['title'] === 'Compra'
+            && $request['amount_minor'] === 4235
+            && $request['participants'][0]['household_member_id'] === 'member-1');
     }
 
     public function test_discarding_forgets_the_import(): void

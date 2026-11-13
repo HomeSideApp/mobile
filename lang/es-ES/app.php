@@ -73,6 +73,7 @@ return [
         'notes' => 'Notas',
         'delete' => 'Borrar movimiento',
         'delete_confirm' => '¿Borrar este movimiento? No se puede deshacer.',
+        'member_missing' => 'No pudimos identificarte en este hogar. Probá desde la web.',
         'title_required' => 'Escribí un concepto.',
         'amount_invalid' => 'El importe tiene que ser mayor a cero.',
     ],

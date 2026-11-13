@@ -97,6 +97,39 @@ final class HouseholdsService
     }
 
     /**
+     * Fila de miembro del usuario actual en un hogar.
+     *
+     * La API de economía pide `participants[].household_member_id` en los
+     * movimientos compartidos, y ese id no es el del usuario: es el de la fila de
+     * `household_members`.
+     */
+    public function myMemberId(string $householdId): ?string
+    {
+        $me = (new AuthService)->me();
+        $userId = $me['id'] ?? null;
+
+        if (! is_string($userId) || $userId === '') {
+            return null;
+        }
+
+        $members = $this->find($householdId)['members'] ?? [];
+
+        if (! is_array($members)) {
+            return null;
+        }
+
+        foreach ($members as $member) {
+            $user = is_array($member) ? ($member['user'] ?? null) : null;
+
+            if (is_array($user) && ($user['id'] ?? null) === $userId) {
+                return is_string($member['id'] ?? null) ? $member['id'] : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Crea un hogar.
      *
      * La API cambia `active_household_id` por su cuenta, así que el que llama no

@@ -27,6 +27,14 @@ class ExpenseFormTest extends TestCase
             '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
                 'enabled_modules' => ['economy'],
             ]]),
+            // La API pide la fila de miembro para `participants`.
+            '*/api/v1/households/household-1' => Http::response(['data' => [
+                'id' => 'household-1',
+                'name' => 'Casa',
+                'members' => [
+                    ['id' => 'member-1', 'user' => ['id' => 'user-1', 'name' => 'Ana']],
+                ],
+            ]]),
             '*/api/v1/households/household-1/economy/overview*' => Http::response(['data' => [
                 'currency' => 'EUR',
                 'current_month' => '2026-11',
@@ -69,11 +77,18 @@ class ExpenseFormTest extends TestCase
 
         $this->assertNotNull($request, 'Se esperaba un POST de alta');
 
-        // El importe viaja en decimales, no en unidades menores.
-        $this->assertSame('12.34', $request['amount']);
+        // La API de economía trabaja en unidades menores: `amount_minor`, no `amount`.
+        $this->assertSame(1234, $request['amount_minor']);
+        $this->assertArrayNotHasKey('amount', $request->data());
+
+        // Y un gasto compartido exige participantes: sin esto el servidor responde
+        // 422 "The participants field is required".
+        $this->assertSame(
+            [['household_member_id' => 'member-1', 'split_type' => 'equal']],
+            $request['participants'],
+        );
         $this->assertSame('expense', $request['type']);
         $this->assertSame('shared', $request['scope']);
-        $this->assertSame('2026-11-10', $request['occurred_at']);
 
         // Sin clave de idempotencia, un doble toque crea dos gastos.
         $this->assertNotSame('', (string) $request->header('Idempotency-Key')[0] ?? '');

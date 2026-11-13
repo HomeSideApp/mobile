@@ -73,6 +73,7 @@ return [
         'notes' => 'Notes',
         'delete' => 'Delete movement',
         'delete_confirm' => 'Delete this movement? It cannot be undone.',
+        'member_missing' => 'We could not identify you in this home. Try from the web.',
         'title_required' => 'Write a concept.',
         'amount_invalid' => 'The amount must be greater than zero.',
     ],
