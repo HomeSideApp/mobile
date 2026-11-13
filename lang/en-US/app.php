@@ -12,6 +12,13 @@ return [
         'change_server' => 'Change server',
     ],
 
+    'tabs' => [
+        'lists' => 'Lists',
+        'recipes' => 'Recipes',
+        'house' => 'Home',
+        'profile' => 'Profile',
+    ],
+
     'households' => [
         'title' => 'Your homes',
         'subtitle' => 'Choose which home to work in',

@@ -66,9 +66,9 @@ final class AppTabsLayout extends NativeLayout
             ->activeColor(theme('primary'))
             ->backgroundColor(theme('surface'))
             ->textColor(theme('on-surface-variant'))
-            ->add(Tab::link('Listas', '/lists', ios: 'cart.fill', android: 'shopping_cart'))
-            ->add(Tab::link('Recetas', '/recipes', ios: 'book.fill', android: 'menu_book'))
-            ->add(Tab::link('Casa', '/house', ios: 'house.fill', android: 'home'))
-            ->add(Tab::link('Perfil', '/profile', ios: 'person.fill', android: 'person'));
+            ->add(Tab::link((string) __('app.tabs.lists'), '/lists', ios: 'cart.fill', android: 'shopping_cart'))
+            ->add(Tab::link((string) __('app.tabs.recipes'), '/recipes', ios: 'book.fill', android: 'menu_book'))
+            ->add(Tab::link((string) __('app.tabs.house'), '/house', ios: 'house.fill', android: 'home'))
+            ->add(Tab::link((string) __('app.tabs.profile'), '/profile', ios: 'person.fill', android: 'person'));
     }
 }
