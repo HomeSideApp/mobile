@@ -56,6 +56,22 @@ class TranslationsTest extends TestCase
         );
     }
 
+    public function test_plural_strings_use_explicit_ranges(): void
+    {
+        // En este runtime `trans_choice` con `|` simple devuelve siempre la
+        // primera forma, aunque el locale sea en/es. Visto en el dispositivo:
+        // un hogar de 2 personas mostraba "2 member".
+        app()->setLocale('es-ES');
+
+        $this->assertSame('1 miembro', trans_choice('app.house.members_count', 1, ['count' => 1]));
+        $this->assertSame('2 miembros', trans_choice('app.house.members_count', 2, ['count' => 2]));
+
+        app()->setLocale('en-US');
+
+        $this->assertSame('2 members', trans_choice('app.house.members_count', 2, ['count' => 2]));
+        $this->assertSame('1 invitation', trans_choice('app.house.invitations_count', 1, ['count' => 1]));
+    }
+
     public function test_every_referenced_key_exists_in_every_locale(): void
     {
         $used = $this->referencedKeys();

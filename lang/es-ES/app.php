@@ -48,7 +48,9 @@ return [
         'title' => 'Tu casa',
         'subtitle' => 'Miembros, invitaciones y módulos del hogar activo.',
         'members' => 'Miembros',
-        'members_count' => ':count miembro|:count miembros',
+        // Rangos explícitos: con `|` simple este runtime devuelve siempre la
+        // primera forma ("2 miembro"), aunque el locale sea correcto.
+        'members_count' => '{1} :count miembro|[2,*] :count miembros',
         'modules' => 'Módulos',
         'module_enabled' => 'Habilitado',
         'module_disabled' => 'Deshabilitado',
@@ -60,7 +62,7 @@ return [
         'role_member' => 'Miembro',
         'unknown_member' => 'Miembro sin nombre',
         'no_members' => 'Todavía no hay otros miembros.',
-        'invitations_count' => ':count invitación|:count invitaciones',
+        'invitations_count' => '{1} :count invitación|[2,*] :count invitaciones',
         'invited_by' => 'Te invitó :name',
         'invitation_accept' => 'Aceptar',
         'invitation_decline' => 'Rechazar',
