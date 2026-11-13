@@ -26,6 +26,9 @@ final class HouseholdsService
      */
     private ?array $households = null;
 
+    /** @var array<int, array<string, mixed>>|null */
+    private ?array $moduleCatalog = null;
+
     public function __construct(
         private readonly Session $session = new Session,
     ) {}
@@ -77,6 +80,58 @@ final class HouseholdsService
         }
 
         return null;
+    }
+
+    /**
+     * Detalle de un hogar: miembros, capacidades y datos de cabecera.
+     *
+     * @return array<string, mixed>
+     */
+    public function find(string $householdId): array
+    {
+        return Session::data(
+            $this->session->client()->get('/households/'.$householdId),
+        );
+    }
+
+    /**
+     * Contadores y **módulos habilitados** del hogar.
+     *
+     * `enabled_modules` sale de acá y no de `find()`: el resource del hogar
+     * expone `economy_module_enabled` pero no el resto de los módulos, y deducir
+     * un módulo apagado por un 403 es tarde y confuso.
+     *
+     * @return array<string, mixed>
+     */
+    public function dashboard(string $householdId): array
+    {
+        return Session::data(
+            $this->session->client()->get('/households/'.$householdId.'/dashboard'),
+        );
+    }
+
+    /**
+     * Catálogo de módulos que entiende el servidor, con etiquetas ya traducidas
+     * por la API. Se usa para nombrar los módulos del hogar sin hardcodear
+     * `economy`/`recipes` en la app: si el servidor agrega uno, aparece solo.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function moduleCatalog(): array
+    {
+        if ($this->moduleCatalog !== null) {
+            return $this->moduleCatalog;
+        }
+
+        $payload = Session::data(
+            $this->session->client()->get('/households/configuration'),
+        );
+
+        $modules = $payload['modules'] ?? [];
+
+        return $this->moduleCatalog = is_array($modules)
+            ? array_values(array_filter($modules, 'is_array'))
+            : [];
     }
 
     public function name(?string $householdId): ?string

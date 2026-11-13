@@ -15,6 +15,21 @@ return [
     'house' => [
         'title' => 'Your home',
         'subtitle' => "Members, invitations and the active household's modules.",
+        'members' => 'Members',
+        'members_summary' => ':count members',
+        'modules' => 'Modules',
+        'module_enabled' => 'Enabled',
+        'module_disabled' => 'Disabled',
+        'pending' => 'Pending',
+        'lists' => 'Lists',
+        'recipes' => 'Recipes',
+        'since' => 'Since :date',
+        'role_admin' => 'Administrator',
+        'role_member' => 'Member',
+        'unknown_member' => 'Unnamed member',
+        'no_members' => 'No other members yet.',
+        'empty_title' => "You don't have a home yet",
+        'empty_subtitle' => 'Create one or ask someone to invite you.',
     ],
 
     'recipes' => [

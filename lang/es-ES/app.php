@@ -15,6 +15,21 @@ return [
     'house' => [
         'title' => 'Tu casa',
         'subtitle' => 'Miembros, invitaciones y módulos del hogar activo.',
+        'members' => 'Miembros',
+        'members_summary' => ':count miembros',
+        'modules' => 'Módulos',
+        'module_enabled' => 'Habilitado',
+        'module_disabled' => 'Deshabilitado',
+        'pending' => 'Pendientes',
+        'lists' => 'Listas',
+        'recipes' => 'Recetas',
+        'since' => 'Desde :date',
+        'role_admin' => 'Administrador',
+        'role_member' => 'Miembro',
+        'unknown_member' => 'Miembro sin nombre',
+        'no_members' => 'Todavía no hay otros miembros.',
+        'empty_title' => 'Todavía no tenés hogar',
+        'empty_subtitle' => 'Creá uno o pedile a alguien que te invite.',
     ],
 
     'recipes' => [
