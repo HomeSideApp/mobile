@@ -19,6 +19,12 @@ return [
         'profile' => 'Profile',
     ],
 
+    'modules' => [
+        'shopping_lists' => 'Shopping lists',
+        'recipes' => 'Recipes',
+        'economy' => 'Money',
+    ],
+
     'households' => [
         'title' => 'Your homes',
         'subtitle' => 'Choose which home to work in',
@@ -28,7 +34,7 @@ return [
         'title' => 'Your home',
         'subtitle' => "Members, invitations and the active household's modules.",
         'members' => 'Members',
-        'members_summary' => ':count members',
+        'members_count' => ':count member|:count members',
         'modules' => 'Modules',
         'module_enabled' => 'Enabled',
         'module_disabled' => 'Disabled',

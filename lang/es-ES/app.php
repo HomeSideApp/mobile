@@ -19,6 +19,12 @@ return [
         'profile' => 'Perfil',
     ],
 
+    'modules' => [
+        'shopping_lists' => 'Listas de la compra',
+        'recipes' => 'Recetas',
+        'economy' => 'Economía',
+    ],
+
     'households' => [
         'title' => 'Tus hogares',
         'subtitle' => 'Elegí en qué hogar trabajar',
@@ -28,7 +34,7 @@ return [
         'title' => 'Tu casa',
         'subtitle' => 'Miembros, invitaciones y módulos del hogar activo.',
         'members' => 'Miembros',
-        'members_summary' => ':count miembros',
+        'members_count' => ':count miembro|:count miembros',
         'modules' => 'Módulos',
         'module_enabled' => 'Habilitado',
         'module_disabled' => 'Deshabilitado',

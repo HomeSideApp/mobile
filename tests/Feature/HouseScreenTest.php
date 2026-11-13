@@ -106,6 +106,41 @@ class HouseScreenTest extends TestCase
         $this->assertSame('Economía', collect($modules)->firstWhere('key', 'economy')['label']);
     }
 
+    public function test_a_raw_translation_key_from_the_server_becomes_a_label(): void
+    {
+        $this->connect();
+
+        // Visto en el dispositivo: cuando el `__()` del servidor no resuelve, el
+        // catálogo manda la clave cruda y la pantalla mostraba
+        // "households.modules.recipes_label".
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households' => Http::response(['data' => [
+                ['id' => 'household-1', 'name' => 'Casa de Ana'],
+            ]]),
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
+                'enabled_modules' => [],
+            ]]),
+            '*/api/v1/households/configuration' => Http::response(['data' => [
+                'modules' => [
+                    ['key' => 'recipes', 'label' => 'households.modules.recipes_label'],
+                    ['key' => 'mystery_module', 'label' => 'households.modules.mystery_module_label'],
+                ],
+            ]]),
+            '*/api/v1/households/household-1' => Http::response(['data' => [
+                'id' => 'household-1',
+                'name' => 'Casa de Ana',
+                'members' => [],
+            ]]),
+        ]);
+
+        $modules = Native::test(House::class)->get('modules');
+
+        $this->assertSame('Recetas', $modules[0]['label']);
+        // Un módulo que la app no conoce igual se lee como texto humano.
+        $this->assertSame('Mystery Module', $modules[1]['label']);
+    }
+
     public function test_without_a_session_it_asks_to_sign_in(): void
     {
         $this->connect(token: null);

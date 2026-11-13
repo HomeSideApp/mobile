@@ -152,11 +152,35 @@ final class House extends NativeComponent
      */
     private function applyModules(array $catalog, array $enabled): void
     {
-        $this->modules = array_values(array_map(fn (array $module): array => [
-            'key' => (string) ($module['key'] ?? ''),
-            'label' => (string) ($module['label'] ?? $module['key'] ?? ''),
-            'enabled' => in_array($module['key'] ?? null, $enabled, true),
-        ], $catalog));
+        $this->modules = array_values(array_map(function (array $module) use ($enabled): array {
+            $key = (string) ($module['key'] ?? '');
+
+            return [
+                'key' => $key,
+                'label' => $this->moduleLabel($key, $module['label'] ?? null),
+                'enabled' => in_array($key, $enabled, true),
+            ];
+        }, $catalog));
+    }
+
+    /**
+     * El catálogo del servidor devuelve etiquetas ya traducidas… salvo cuando
+     * `__()` no resuelve la clave y viaja cruda (`households.modules.recipes_label`).
+     * Se usa la traducción de la app cuando la hay, y si no se humaniza la clave.
+     */
+    private function moduleLabel(string $key, mixed $fromServer): string
+    {
+        $translated = 'app.modules.'.$key;
+
+        if ($key !== '' && trans()->has($translated)) {
+            return (string) __($translated);
+        }
+
+        if (is_string($fromServer) && $fromServer !== '' && ! str_contains($fromServer, '.')) {
+            return $fromServer;
+        }
+
+        return $key === '' ? '' : (string) str($key)->replace('_', ' ')->title();
     }
 
     private function month(mixed $value): ?string

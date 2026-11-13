@@ -37,7 +37,7 @@
 
                     <native:row class="w-full items-center gap-2">
                         <native:text class="text-xs text-theme-on-surface-variant">
-                            {{ __('app.house.members_summary', ['count' => $membersCount]) }}
+                            {{ trans_choice('app.house.members_count', $membersCount, ['count' => $membersCount]) }}
                         </native:text>
                         @if ($since)
                             <native:spacer />

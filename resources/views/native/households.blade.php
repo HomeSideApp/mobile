@@ -30,7 +30,7 @@
                         <native:column class="flex-1 gap-1">
                             <native:text class="text-sm font-medium text-theme-on-surface">{{ $household['name'] }}</native:text>
                             <native:text class="text-xs text-theme-on-surface-variant">
-                                {{ __('app.house.members_summary', ['count' => $household['members']]) }}
+                                {{ trans_choice('app.house.members_count', $household['members'], ['count' => $household['members']]) }}
                             </native:text>
                         </native:column>
 
