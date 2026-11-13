@@ -71,7 +71,7 @@ return [
         'invite_send' => 'Invitar',
         'invite_sent' => 'Invitación enviada a :email.',
         'invite_link_failed' => 'No pudimos crear el link de invitación.',
-        'invite_link_shared' => 'Abrimos el link en el navegador para que lo compartas desde ahí.',
+        'invite_link_shared' => 'Link de invitación listo para compartir.',
         'invite_share_title' => 'Invitación a un hogar de HomeSide',
         'invite_share_text' => 'Te invito a :household en HomeSide',
         'invitations_count' => '{1} :count invitación|[2,*] :count invitaciones',

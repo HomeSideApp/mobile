@@ -75,7 +75,7 @@ class HouseInviteTest extends TestCase
         Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/invite'));
     }
 
-    public function test_the_link_opens_the_url_the_server_builds(): void
+    public function test_the_link_is_shared_with_the_system_sheet(): void
     {
         $this->connect();
         $this->fakeHouse();
@@ -84,11 +84,10 @@ class HouseInviteTest extends TestCase
 
         $screen = Native::test(House::class)->call('shareInviteLink');
 
-        // La app no compone URLs de invitación: usa la que devuelve el servidor.
-        // Se abre en el navegador porque `Share.Url` no existe en el bridge de
-        // NativePHP 4.7.0 (verificado en dispositivo: "Function not found").
-        $call = $bridge->callsTo('Browser.Open')[0] ?? null;
-        $this->assertNotNull($call, 'Se esperaba abrir el link en el navegador');
+        // La app no compone URLs de invitación: comparte la que devuelve el
+        // servidor, a través del handler que aporta `nativephp/mobile-share`.
+        $call = $bridge->callsTo('Share.Url')[0] ?? null;
+        $this->assertNotNull($call, 'Se esperaba la hoja de compartir');
 
         $params = is_array($call['params'] ?? null)
             ? $call['params']

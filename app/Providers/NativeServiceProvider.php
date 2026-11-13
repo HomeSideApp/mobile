@@ -40,6 +40,8 @@ class NativeServiceProvider extends ServiceProvider
             NativeUIServiceProvider::class,
             ApkUpdaterServiceProvider::class,
             CameraServiceProvider::class,
+            \Native\Mobile\Providers\ShareServiceProvider::class,
+        
 
         ];
     }

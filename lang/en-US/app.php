@@ -69,7 +69,7 @@ return [
         'invite_send' => 'Invite',
         'invite_sent' => 'Invitation sent to :email.',
         'invite_link_failed' => 'We could not create the invitation link.',
-        'invite_link_shared' => 'We opened the link in the browser so you can share it from there.',
+        'invite_link_shared' => 'Invitation link ready to share.',
         'invite_share_title' => 'Invitation to a HomeSide home',
         'invite_share_text' => 'Join :household on HomeSide',
         'invitations_count' => '{1} :count invitation|[2,*] :count invitations',

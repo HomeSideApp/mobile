@@ -12,6 +12,7 @@
         "laravel/tinker": "^3.0",
         "nativephp/mobile": "^4.7",
         "nativephp/mobile-camera": "^1.1",
+        "nativephp/mobile-share": "^1.1",
         "nativephp/mobile-ui": "^0.9"
     },
     "require-dev": {
