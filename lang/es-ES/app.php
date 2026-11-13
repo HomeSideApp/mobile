@@ -45,6 +45,20 @@ return [
         'create' => 'Crear hogar',
     ],
 
+    'ticket' => [
+        'title' => 'Ticket',
+        'pick_title' => 'Escanear un ticket',
+        'pick_hint' => 'Elegí la foto y el servidor lee el importe, el local y la fecha.',
+        'pick' => 'Elegir foto',
+        'reading' => 'Leyendo el ticket…',
+        'review' => 'Revisá lo detectado',
+        'confirm' => 'Confirmar gasto',
+        'discard' => 'Descartar',
+        'retry' => 'Probar con otra foto',
+        'failed' => 'No pudimos leer el ticket. Probá con una foto más nítida.',
+        'default_title' => 'Ticket',
+    ],
+
     'expense_form' => [
         'create_title' => 'Nuevo movimiento',
         'edit_title' => 'Editar movimiento',
@@ -76,6 +90,7 @@ return [
         'range_last' => 'Mes pasado',
         'range_year' => 'Este año',
         'range_all' => 'Todo',
+        'scan' => 'Ticket',
         'new' => 'Nuevo movimiento',
         'recent' => 'Últimos movimientos',
         'no_title' => 'Sin título',

@@ -80,6 +80,54 @@ final class EconomyService
         );
     }
 
+    /**
+     * Sube una foto de ticket y arranca el reconocimiento.
+     *
+     * @return array<string, mixed>
+     */
+    public function createImport(?string $householdId, string $contents, string $filename): array
+    {
+        return Session::data($this->session->client()->uploadFile(
+            $this->path($householdId, 'imports'),
+            'file',
+            $contents,
+            $filename,
+            ['sections' => ['place' => 1, 'date' => 1, 'items' => 1, 'taxes' => 1]],
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function importStatus(?string $householdId, string $importId): array
+    {
+        return Session::data(
+            $this->session->client()->get($this->path($householdId, 'imports').'/'.$importId),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function confirmImport(?string $householdId, string $importId, array $payload, string $idempotencyKey): array
+    {
+        return Session::data(
+            $this->session->client()->post(
+                $this->path($householdId, 'imports').'/'.$importId.'/confirm',
+                $payload,
+                $idempotencyKey,
+            ),
+        );
+    }
+
+    public function discardImport(?string $householdId, string $importId): void
+    {
+        Session::data(
+            $this->session->client()->delete($this->path($householdId, 'imports').'/'.$importId),
+        );
+    }
+
     private function path(?string $householdId, string $endpoint): string
     {
         $base = $householdId !== null && $householdId !== ''

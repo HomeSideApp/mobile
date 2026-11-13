@@ -98,7 +98,21 @@ final class HomesideClient
      * @param  array<string, mixed>  $extra
      * @return array<string, mixed>
      */
+    /**
+     * Sube la foto de un ítem: `PUT` multipart sobre `image_url`.
+     */
     public function upload(string $path, string $contents, string $filename, array $extra = []): array
+    {
+        return $this->uploadFile($path, 'image_url', $contents, $filename, ['_method' => 'PUT', ...$extra]);
+    }
+
+    /**
+     * Subida multipart genérica (tickets de economía, documentos, etc.).
+     *
+     * `$extra` puede llevar arrays anidados (`sections[place]`) y se envía tal
+     * cual: el servidor espera esos campos, no un único payload JSON.
+     */
+    public function uploadFile(string $path, string $field, string $contents, string $filename, array $extra = []): array
     {
         $url = $this->server->apiBase.'/'.ltrim($path, '/');
 
@@ -106,14 +120,14 @@ final class HomesideClient
             ->acceptJson()
             ->timeout((int) config('homeside.timeout', 15))
             ->withHeaders(['Accept-Language' => (string) config('homeside.locale', 'es-ES')])
-            ->attach('image_url', $contents, $filename);
+            ->attach($field, $contents, $filename);
 
         if ($this->token !== null && $this->token !== '') {
             $request = $request->withToken($this->token);
         }
 
         try {
-            $response = $request->post($url, ['_method' => 'PUT', ...$extra]);
+            $response = $request->post($url, $extra);
         } catch (ConnectionException $exception) {
             throw HomesideException::network($this->connectionDetail($exception));
         }

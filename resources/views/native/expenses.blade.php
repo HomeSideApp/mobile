@@ -62,11 +62,19 @@
                     </native:row>
                 </native:column>
 
-                <native:button
-                    :label="__('app.expenses.new')"
-                    class="w-full"
-                    @press="newExpense"
-                />
+                <native:row class="w-full items-center gap-2">
+                    <native:button
+                        :label="__('app.expenses.new')"
+                        class="flex-1"
+                        @press="newExpense"
+                    />
+                    <native:button
+                        :label="__('app.expenses.scan')"
+                        variant="secondary"
+                        class="flex-1"
+                        @press="scanTicket"
+                    />
+                </native:row>
 
                 <native:row class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant p-1">
                     @foreach ([

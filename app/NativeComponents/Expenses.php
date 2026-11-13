@@ -188,6 +188,11 @@ final class Expenses extends NativeComponent
         $this->load();
     }
 
+    public function scanTicket(): void
+    {
+        $this->navigate('/expenses/ticket?scope='.$this->scope);
+    }
+
     public function newExpense(): void
     {
         $this->navigate('/expenses/new?scope='.$this->scope);

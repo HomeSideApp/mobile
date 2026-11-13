@@ -45,6 +45,20 @@ return [
         'create' => 'Create home',
     ],
 
+    'ticket' => [
+        'title' => 'Receipt',
+        'pick_title' => 'Scan a receipt',
+        'pick_hint' => 'Pick the photo and the server reads the amount, place and date.',
+        'pick' => 'Pick photo',
+        'reading' => 'Reading the receipt…',
+        'review' => 'Check what we found',
+        'confirm' => 'Confirm expense',
+        'discard' => 'Discard',
+        'retry' => 'Try another photo',
+        'failed' => 'We could not read the receipt. Try a sharper photo.',
+        'default_title' => 'Receipt',
+    ],
+
     'expense_form' => [
         'create_title' => 'New movement',
         'edit_title' => 'Edit movement',
@@ -76,6 +90,7 @@ return [
         'range_last' => 'Last month',
         'range_year' => 'This year',
         'range_all' => 'All',
+        'scan' => 'Receipt',
         'new' => 'New movement',
         'recent' => 'Recent movements',
         'no_title' => 'Untitled',

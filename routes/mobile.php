@@ -3,6 +3,7 @@
 use App\Http\Middleware\ApplyAppearance;
 use App\NativeComponents\ExpenseForm;
 use App\NativeComponents\Expenses;
+use App\NativeComponents\ExpenseTicket;
 use App\NativeComponents\House;
 use App\NativeComponents\HouseCreate;
 use App\NativeComponents\Households;
@@ -50,6 +51,11 @@ Route::middleware(ApplyAppearance::class)->group(function (): void {
     });
 
     // Pantallas empujadas: barra superior con volver.
+    // Ticket con OCR: subir, esperar y confirmar.
+    Route::native('/expenses/ticket', ExpenseTicket::class)
+        ->layout(AppStackLayout::class)
+        ->name('expenses.ticket');
+
     // Alta y edición de movimientos de economía.
     Route::native('/expenses/new', ExpenseForm::class)
         ->layout(AppStackLayout::class)
