@@ -56,8 +56,22 @@ final class Expenses extends NativeComponent
         $this->moduleDisabled = false;
 
         try {
-            $householdId = app(HouseholdsService::class)->activeId();
+            $households = app(HouseholdsService::class);
+            $householdId = $households->activeId();
             $this->householdScope = $householdId !== null;
+
+            // El módulo apagado responde 404 (`EnsureModuleEnabled` hace
+            // `abort(404, ...)`), indistinguible de "el hogar no existe". Por eso
+            // se pregunta antes: el dashboard ya dice qué módulos están prendidos.
+            if ($householdId !== null) {
+                $enabled = $households->dashboard($householdId)['enabled_modules'] ?? [];
+
+                if (is_array($enabled) && ! in_array('economy', $enabled, true)) {
+                    $this->moduleDisabled = true;
+
+                    return;
+                }
+            }
 
             $overview = (new EconomyService)->overview($householdId);
 
@@ -81,9 +95,9 @@ final class Expenses extends NativeComponent
         } catch (HomesideException $exception) {
             $this->needsLogin = $exception->requiresLogin();
 
-            // El módulo apagado en el hogar llega como 403 con ese texto; no es un
-            // fallo de la app y merece su propio estado.
-            $this->moduleDisabled = $exception->status === 403;
+            // Red de seguridad: si el módulo se apaga entre la consulta y la
+            // llamada, la API responde 403/404 igual.
+            $this->moduleDisabled = $exception->status === 403 || $exception->status === 404;
             $this->error = $this->moduleDisabled ? null : $exception->getMessage();
         } finally {
             $this->loading = false;

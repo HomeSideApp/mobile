@@ -25,6 +25,10 @@ class ExpensesScreenTest extends TestCase
             '*/api/v1/households' => Http::response(['data' => [
                 ['id' => 'household-1', 'name' => 'Casa de Ana'],
             ]]),
+            // La pantalla consulta los módulos antes de pedir economía.
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
+                'enabled_modules' => ['shopping_lists', 'economy'],
+            ]]),
             '*/api/v1/households/household-1/economy/overview*' => Http::response(['data' => [
                 'currency' => 'EUR',
                 'current_month' => '2026-11',
@@ -99,7 +103,7 @@ class ExpensesScreenTest extends TestCase
         Http::assertSent(fn ($request): bool => str_contains($request->url(), '/economy/me/overview'));
     }
 
-    public function test_a_disabled_module_is_not_shown_as_an_error(): void
+    public function test_a_disabled_module_is_detected_before_calling_economy(): void
     {
         $this->connect();
         Http::fake([
@@ -107,9 +111,36 @@ class ExpensesScreenTest extends TestCase
             '*/api/v1/households' => Http::response(['data' => [
                 ['id' => 'household-1', 'name' => 'Casa de Ana'],
             ]]),
+            // El dashboard dice que economía está apagada en este hogar.
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
+                'enabled_modules' => ['shopping_lists'],
+            ]]),
+        ]);
+
+        $screen = Native::test(Expenses::class);
+
+        $this->assertTrue($screen->get('moduleDisabled'));
+        $this->assertNull($screen->get('error'));
+
+        // Y no se pide economía: el endpoint responde 404 para módulos apagados,
+        // que sería indistinguible de un hogar inexistente.
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/economy/'));
+    }
+
+    public function test_a_404_from_economy_is_treated_as_a_disabled_module(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/me' => Http::response(['data' => $this->me()]),
+            '*/api/v1/households' => Http::response(['data' => [
+                ['id' => 'household-1', 'name' => 'Casa de Ana'],
+            ]]),
+            '*/api/v1/households/household-1/dashboard' => Http::response(['data' => [
+                'enabled_modules' => ['shopping_lists', 'economy'],
+            ]]),
             '*/api/v1/households/household-1/economy/overview*' => Http::response([
                 'message' => 'This module is not enabled for this household',
-            ], 403),
+            ], 404),
         ]);
 
         $screen = Native::test(Expenses::class);
