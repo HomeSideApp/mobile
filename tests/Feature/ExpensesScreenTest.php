@@ -149,6 +149,25 @@ class ExpensesScreenTest extends TestCase
         $this->assertNull($screen->get('error'));
     }
 
+    public function test_the_range_filter_is_sent_to_the_api(): void
+    {
+        $this->connect();
+        $this->fakeOverview();
+
+        Native::test(Expenses::class)->call('useRange', 'year');
+
+        Http::assertSent(function ($request): bool {
+            if (! str_contains($request->url(), '/economy/transactions')) {
+                return false;
+            }
+
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+            return ($query['from'] ?? null) === now()->startOfYear()->toDateString()
+                && ($query['to'] ?? null) === now()->endOfYear()->toDateString();
+        });
+    }
+
     public function test_without_a_session_it_asks_to_sign_in(): void
     {
         $this->connect(token: null);

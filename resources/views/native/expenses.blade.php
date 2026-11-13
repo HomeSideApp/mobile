@@ -68,6 +68,23 @@
                     @press="newExpense"
                 />
 
+                <native:row class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant p-1">
+                    @foreach ([
+                        ['key' => 'month', 'label' => __('app.expenses.range_month')],
+                        ['key' => 'last', 'label' => __('app.expenses.range_last')],
+                        ['key' => 'year', 'label' => __('app.expenses.range_year')],
+                        ['key' => 'all', 'label' => __('app.expenses.range_all')],
+                    ] as $option)
+                        <native:pressable class="flex-1" @press="useRange({{ json_encode($option['key']) }})">
+                            <native:column class="w-full items-center rounded-lg px-1 py-2 {{ $range === $option['key'] ? 'bg-theme-surface' : '' }}">
+                                <native:text class="text-[11px] font-semibold {{ $range === $option['key'] ? 'text-theme-on-surface' : 'text-theme-on-surface-variant' }}">
+                                    {{ $option['label'] }}
+                                </native:text>
+                            </native:column>
+                        </native:pressable>
+                    @endforeach
+                </native:row>
+
                 @if ($movements !== [])
                     <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
                         <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">

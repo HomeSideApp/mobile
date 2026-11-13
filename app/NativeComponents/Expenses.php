@@ -50,6 +50,9 @@ final class Expenses extends NativeComponent
     /** @var list<array<string, mixed>> */
     public array $movements = [];
 
+    /** Rango de la lista: mes actual, mes pasado, año o todo. */
+    public string $range = 'month';
+
     public function mount(): void
     {
         $this->load();
@@ -107,7 +110,10 @@ final class Expenses extends NativeComponent
                 'total' => Money::format((int) ($place['total_minor'] ?? 0), $this->currency),
             ], array_slice(array_values(array_filter($places, 'is_array')), 0, 5));
 
-            $movements = $economy->transactions($householdId, ['perPage' => 20]);
+            $movements = $economy->transactions($householdId, [
+                'perPage' => 30,
+                ...$this->rangeQuery(),
+            ]);
 
             $this->movements = array_map(fn (array $movement): array => [
                 'id' => (string) ($movement['id'] ?? ''),
@@ -134,6 +140,42 @@ final class Expenses extends NativeComponent
         } finally {
             $this->loading = false;
         }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function rangeQuery(): array
+    {
+        $today = now();
+
+        return match ($this->range) {
+            'last' => [
+                'from' => $today->copy()->subMonthNoOverflow()->startOfMonth()->toDateString(),
+                'to' => $today->copy()->subMonthNoOverflow()->endOfMonth()->toDateString(),
+            ],
+            'year' => [
+                'from' => $today->copy()->startOfYear()->toDateString(),
+                'to' => $today->copy()->endOfYear()->toDateString(),
+            ],
+            // 'month' y 'all': la lista sólo muestra lo que el servidor ordena por
+            // fecha; acotar a mes actual evita traer años de historial.
+            'month' => [
+                'from' => $today->copy()->startOfMonth()->toDateString(),
+                'to' => $today->copy()->endOfMonth()->toDateString(),
+            ],
+            default => [],
+        };
+    }
+
+    public function useRange(string $range): void
+    {
+        if (! in_array($range, ['month', 'last', 'year', 'all'], true)) {
+            return;
+        }
+
+        $this->range = $range;
+        $this->load();
     }
 
     public function useScope(string $scope): void
