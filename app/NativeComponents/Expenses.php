@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\EconomyService;
 use App\Services\Homeside\HouseholdsService;
+use App\Support\Concerns\HasHouseholdSwitcher;
 use App\Support\Money;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
@@ -18,6 +19,8 @@ use Native\Mobile\Edge\NativeComponent;
  */
 final class Expenses extends NativeComponent
 {
+    use HasHouseholdSwitcher;
+
     public bool $loading = true;
 
     public bool $needsLogin = false;

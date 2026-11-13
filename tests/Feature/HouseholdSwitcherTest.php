@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\NativeComponents\Expenses;
+use App\NativeComponents\House;
 use App\NativeComponents\Lists;
+use App\NativeComponents\Profile;
+use App\NativeComponents\Recipes;
 use App\NativeLayouts\AppTabsLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -17,6 +21,29 @@ class HouseholdSwitcherTest extends TestCase
 {
     use InteractsWithHomeside;
     use RefreshDatabase;
+
+    /**
+     * El layout agrega la acción en la barra y esa acción invoca un método de la
+     * pantalla que se está mostrando. Una pestaña nueva sin el trait deja el ⋮
+     * muerto y en silencio — pasó con Gastos.
+     */
+    public function test_every_tab_screen_can_open_the_switcher(): void
+    {
+        $tabs = [
+            'lists' => Lists::class,
+            'recipes' => Recipes::class,
+            'expenses' => Expenses::class,
+            'house' => House::class,
+            'profile' => Profile::class,
+        ];
+
+        foreach ($tabs as $uri => $component) {
+            $this->assertTrue(
+                method_exists($component, 'openHouseholds'),
+                "La pestaña [{$uri}] no implementa openHouseholds(): el selector de la barra no va a responder ahí.",
+            );
+        }
+    }
 
     public function test_the_tab_layout_offers_the_active_household_as_a_nav_action(): void
     {
