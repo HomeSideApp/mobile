@@ -31,7 +31,7 @@ final class ListCreate extends NativeComponent
         (new LocaleService)->apply();
 
         try {
-            $households = new HouseholdsService;
+            $households = app(HouseholdsService::class);
 
             $this->householdId = $households->activeId();
             $this->householdName = $households->name($this->householdId);

@@ -2,6 +2,7 @@
 
 namespace App\NativeComponents;
 
+use App\Support\Concerns\HasHouseholdSwitcher;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -13,6 +14,8 @@ use Native\Mobile\Edge\NativeComponent;
  */
 final class Recipes extends NativeComponent
 {
+    use HasHouseholdSwitcher;
+
     public function navTitle(): string
     {
         return 'Recetas';

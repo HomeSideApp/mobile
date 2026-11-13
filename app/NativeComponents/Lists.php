@@ -8,6 +8,7 @@ use App\Services\Homeside\HouseholdsService;
 use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
 use App\Services\Settings\LocaleService;
+use App\Support\Concerns\HasHouseholdSwitcher;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -20,6 +21,8 @@ use Native\Mobile\Edge\NativeComponent;
  */
 final class Lists extends NativeComponent
 {
+    use HasHouseholdSwitcher;
+
     /** @var array<int, array<string, mixed>> */
     public array $personal = [];
 
@@ -154,7 +157,7 @@ final class Lists extends NativeComponent
 
         try {
             $lists = new ListsService;
-            $households = new HouseholdsService;
+            $households = app(HouseholdsService::class);
 
             $this->households = $households->all();
             $this->activeHouseholdId = $households->activeId();

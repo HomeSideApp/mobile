@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\HouseholdsService;
 use App\Services\Settings\LocaleService;
+use App\Support\Concerns\HasHouseholdSwitcher;
 use Carbon\CarbonImmutable;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
@@ -20,6 +21,8 @@ use Native\Mobile\Edge\NativeComponent;
  */
 final class House extends NativeComponent
 {
+    use HasHouseholdSwitcher;
+
     public bool $loading = true;
 
     public bool $needsLogin = false;
@@ -68,7 +71,7 @@ final class House extends NativeComponent
         try {
             (new LocaleService)->apply();
 
-            $households = new HouseholdsService;
+            $households = app(HouseholdsService::class);
             $active = $households->active();
 
             if ($active === null) {

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Homeside\HouseholdsService;
 use App\Services\Settings\AppearanceService;
 use App\Services\Settings\LocaleService;
 use Illuminate\Support\ServiceProvider;
@@ -13,7 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Un solo `HouseholdsService` por request: la barra superior y la
+        // pantalla piden el hogar activo en el mismo render, y con instancias
+        // separadas eso son dos `GET /me` y dos `GET /households` para el mismo
+        // dato. El alcance por request es el correcto: cambiar de hogar abre un
+        // request nuevo, así que no hay caché vieja que invalidar.
+        $this->app->singleton(HouseholdsService::class);
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Services\Homeside\AuthService;
 use App\Services\Homeside\Session;
 use App\Services\Settings\AppearanceService;
 use App\Services\Settings\LocaleService;
+use App\Support\Concerns\HasHouseholdSwitcher;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
@@ -22,6 +23,8 @@ use Native\Mobile\Facades\Browser;
  */
 final class Profile extends NativeComponent
 {
+    use HasHouseholdSwitcher;
+
     public ?string $server = null;
 
     public ?string $userName = null;

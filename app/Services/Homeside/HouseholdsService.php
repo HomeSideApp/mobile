@@ -83,6 +83,20 @@ final class HouseholdsService
     }
 
     /**
+     * Cambia el hogar activo en el servidor.
+     *
+     * No toca el memo a propósito: el id activo sale de `/me`, que se vuelve a
+     * pedir en el próximo request. Cambiar de hogar es un cambio de contexto,
+     * no un detalle de caché.
+     */
+    public function switchTo(string $householdId): void
+    {
+        Session::data(
+            $this->session->client()->post('/households/switch/'.$householdId),
+        );
+    }
+
+    /**
      * Detalle de un hogar: miembros, capacidades y datos de cabecera.
      *
      * @return array<string, mixed>

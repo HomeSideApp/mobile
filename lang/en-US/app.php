@@ -12,6 +12,11 @@ return [
         'change_server' => 'Change server',
     ],
 
+    'households' => [
+        'title' => 'Your homes',
+        'subtitle' => 'Choose which home to work in',
+    ],
+
     'house' => [
         'title' => 'Your home',
         'subtitle' => "Members, invitations and the active household's modules.",
@@ -28,6 +33,7 @@ return [
         'role_member' => 'Member',
         'unknown_member' => 'Unnamed member',
         'no_members' => 'No other members yet.',
+        'switch' => 'Switch home',
         'empty_title' => "You don't have a home yet",
         'empty_subtitle' => 'Create one or ask someone to invite you.',
     ],
