@@ -25,6 +25,13 @@ final class HomesideException extends RuntimeException
 
     public const string VALIDATION = 'validation';
 
+    /**
+     * El plan del usuario no permite más (hogares, recetas, tickets). No es un
+     * error del servidor ni falta de permisos: es un límite comercial, y la UI
+     * tiene que poder decir eso en vez de "algo salió mal".
+     */
+    public const string QUOTA = 'quota';
+
     public const string RATE_LIMITED = 'rate_limited';
 
     public const string SERVER = 'server';
@@ -90,6 +97,16 @@ final class HomesideException extends RuntimeException
             $message !== '' ? $message : __('app.errors.validation'),
             422,
             $errors,
+        );
+    }
+
+    public static function quota(?string $serverCode = null, string $message = ''): self
+    {
+        return new self(
+            self::QUOTA,
+            $message !== '' ? $message : __('app.errors.quota'),
+            402,
+            serverCode: $serverCode,
         );
     }
 

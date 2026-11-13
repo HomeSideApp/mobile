@@ -114,6 +114,48 @@ class HouseholdsServiceTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_it_creates_a_household_with_the_given_attributes(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/households' => Http::response(['data' => [
+                'id' => 'household-9',
+                'name' => 'Casa nueva',
+            ]], 201),
+        ]);
+
+        $created = (new HouseholdsService)->create([
+            'name' => 'Casa nueva',
+            'color' => '#1E6B63',
+            'modules' => ['shopping_lists' => true],
+        ]);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/api/v1/households')
+            && $request['name'] === 'Casa nueva'
+            && $request['color'] === '#1E6B63');
+
+        $this->assertSame('household-9', $created['id']);
+    }
+
+    public function test_a_quota_refusal_is_reported_as_quota(): void
+    {
+        $this->connect();
+        Http::fake([
+            '*/api/v1/households' => Http::response(['code' => 'quota_exceeded'], 402),
+        ]);
+
+        try {
+            (new HouseholdsService)->create(['name' => 'Casa nueva']);
+            $this->fail('Se esperaba HomesideException');
+        } catch (HomesideException $exception) {
+            // 402 caía en "unexpected": la pantalla no podía distinguir un plan
+            // sin cupo de un error cualquiera.
+            $this->assertSame(HomesideException::QUOTA, $exception->reason);
+            $this->assertSame(402, $exception->status);
+        }
+    }
+
     public function test_it_reports_a_missing_session(): void
     {
         $this->connect(token: null);

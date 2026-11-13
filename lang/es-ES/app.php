@@ -25,9 +25,23 @@ return [
         'economy' => 'Economía',
     ],
 
+    'house_create' => [
+        'title' => 'Nuevo hogar',
+        'name_label' => 'Nombre',
+        'name_placeholder' => 'Casa de…',
+        'name_hint' => 'Es el nombre que vas a ver en la barra superior.',
+        'color' => 'Color',
+        'modules' => 'Qué incluye',
+        'modules_hint' => 'Los módulos se pueden cambiar después desde la web.',
+        'submit' => 'Crear hogar',
+        'name_required' => 'Ponele un nombre al hogar.',
+        'quota' => 'Tu plan no permite crear más hogares. Podés liberar cupo desde la web.',
+    ],
+
     'households' => [
         'title' => 'Tus hogares',
         'subtitle' => 'Elegí en qué hogar trabajar',
+        'create' => 'Crear hogar',
     ],
 
     'house' => [
@@ -237,6 +251,7 @@ return [
         'network_host' => 'No encontramos ese dominio.',
         'not_configured' => 'Todavía no elegiste un servidor de HomeSide.',
         'unauthorized' => 'Tu sesión venció. Volvé a iniciar sesión.',
+        'quota' => 'Llegaste al límite de tu plan.',
         'forbidden' => 'Tu cuenta no tiene permiso para hacer esto.',
         'conflict' => 'Ese recurso ya cambió. Actualizá y volvé a intentar.',
         'validation' => 'Revisá los datos ingresados.',

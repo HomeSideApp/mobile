@@ -83,6 +83,23 @@ final class HouseholdsService
     }
 
     /**
+     * Crea un hogar.
+     *
+     * La API cambia `active_household_id` por su cuenta, así que el que llama no
+     * necesita un switch posterior. Puede responder 402 cuando el plan no
+     * permite más hogares.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    public function create(array $attributes): array
+    {
+        return Session::data(
+            $this->session->client()->post('/households', $attributes),
+        );
+    }
+
+    /**
      * Cambia el hogar activo en el servidor.
      *
      * No toca el memo a propósito: el id activo sale de `/me`, que se vuelve a

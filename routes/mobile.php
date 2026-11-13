@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApplyAppearance;
 use App\NativeComponents\House;
+use App\NativeComponents\HouseCreate;
 use App\NativeComponents\Households;
 use App\NativeComponents\ListCreate;
 use App\NativeComponents\ListDetail;
@@ -42,6 +43,11 @@ Route::middleware(ApplyAppearance::class)->group(function (): void {
     });
 
     // Pantallas empujadas: barra superior con volver.
+    // Crear hogar: se entra desde el selector.
+    Route::native('/households/create', HouseCreate::class)
+        ->layout(AppStackLayout::class)
+        ->name('households.create');
+
     // Selector de hogar: se abre desde la barra superior de cualquier pestaña.
     Route::native('/households', Households::class)
         ->layout(AppStackLayout::class)

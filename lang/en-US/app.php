@@ -25,9 +25,23 @@ return [
         'economy' => 'Money',
     ],
 
+    'house_create' => [
+        'title' => 'New home',
+        'name_label' => 'Name',
+        'name_placeholder' => 'Home of…',
+        'name_hint' => 'This is the name you will see in the top bar.',
+        'color' => 'Colour',
+        'modules' => 'What it includes',
+        'modules_hint' => 'Modules can be changed later from the web.',
+        'submit' => 'Create home',
+        'name_required' => 'Give the home a name.',
+        'quota' => 'Your plan does not allow more homes. You can free up a slot from the web.',
+    ],
+
     'households' => [
         'title' => 'Your homes',
         'subtitle' => 'Choose which home to work in',
+        'create' => 'Create home',
     ],
 
     'house' => [
@@ -237,6 +251,7 @@ return [
         'network_host' => 'We could not find that domain.',
         'not_configured' => 'You have not chosen a HomeSide server yet.',
         'unauthorized' => 'Your session expired. Sign in again.',
+        'quota' => 'You reached your plan limit.',
         'forbidden' => 'Your account is not allowed to do this.',
         'conflict' => 'That resource changed in the meantime. Refresh and try again.',
         'validation' => 'Check the data you entered.',

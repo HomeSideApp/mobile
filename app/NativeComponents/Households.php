@@ -84,6 +84,11 @@ final class Households extends NativeComponent
         $this->navigate('/lists');
     }
 
+    public function createHousehold(): void
+    {
+        $this->navigate('/households/create');
+    }
+
     public function goToLogin(): void
     {
         $this->navigate('/login');

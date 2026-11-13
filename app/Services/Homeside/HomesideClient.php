@@ -234,6 +234,11 @@ final class HomesideClient
                 : HomesideException::unauthorized();
         }
 
+        if ($status === 402) {
+            // Límite comercial del plan: mensaje propio, no "error inesperado".
+            return HomesideException::quota($code);
+        }
+
         if ($status === 403) {
             return HomesideException::forbidden($code, $message);
         }

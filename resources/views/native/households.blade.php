@@ -17,6 +17,12 @@
                     {{ __('app.households.subtitle') }}
                 </native:text>
 
+                <native:button
+                    :label="__('app.households.create')"
+                    class="w-full"
+                    @press="createHousehold"
+                />
+
                 @forelse ($households as $household)
                     <native:pressable
                         class="w-full rounded-lg bg-theme-surface p-3"
