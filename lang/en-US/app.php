@@ -60,6 +60,7 @@ return [
         'role_member' => 'Member',
         'unknown_member' => 'Unnamed member',
         'no_members' => 'No other members yet.',
+        'switch_short' => 'Home',
         'switch' => 'Switch home',
         'empty_title' => "You don't have a home yet",
         'empty_subtitle' => 'Create one or ask someone to invite you.',

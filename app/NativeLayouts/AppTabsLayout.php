@@ -25,24 +25,28 @@ final class AppTabsLayout extends NativeLayout
 
     public function navBar(NativeComponent $screen): ?NavBar
     {
-        $bar = NavBar::make()->title($screen->navTitle());
-
-        // El hogar activo es el contexto de toda la app, así que vive en la
-        // barra: se ve desde cualquier pestaña y se cambia con un toque.
-        // `NavAction` sólo admite etiqueta o imagen, no íconos por nombre, así
-        // que va como texto y el sistema lo recorta si el nombre es largo.
         $name = $this->activeHouseholdName();
 
-        if ($name !== null) {
-            $bar->action(
+        // Sin hogar resoluble (sin sesión, o un id que ya no existe) la barra
+        // queda como antes: título de la pantalla y sin selector.
+        if ($name === null) {
+            return NavBar::make()->title($screen->navTitle());
+        }
+
+        // El hogar activo va de **título** y la pantalla de subtítulo: es el
+        // contexto que condiciona todo el contenido, y una acción de barra en
+        // Android se colapsa a un menú de tres puntos (no muestra su etiqueta),
+        // así que esconderlo ahí dejaba al usuario sin saber dónde estaba.
+        // La acción queda como el toque que abre el selector.
+        return NavBar::make()
+            ->title($name)
+            ->subtitle($screen->navTitle())
+            ->action(
                 NavAction::make('households')
-                    ->label($name)
+                    ->label((string) __('app.house.switch_short'))
                     ->a11yLabel((string) __('app.house.switch'))
                     ->press('openHouseholds'),
             );
-        }
-
-        return $bar;
     }
 
     private function activeHouseholdName(): ?string

@@ -28,8 +28,15 @@ class HouseholdSwitcherTest extends TestCase
             ]]),
         ]);
 
-        $bar = (new AppTabsLayout)->navBar(new Lists);
+        $screen = new Lists;
+        $bar = (new AppTabsLayout)->navBar($screen);
+        $props = $bar->toRootProps();
 
+        // El nombre del hogar es el contexto y va de título; la pantalla queda
+        // de subtítulo (traducido, como cualquier otro texto de la app). El
+        // selector sigue accesible como acción.
+        $this->assertSame('Casa de Ana', $props['title'] ?? null);
+        $this->assertSame($screen->navTitle(), $props['subtitle'] ?? null);
         $this->assertCount(1, $bar->getActions());
         $this->assertCount(1, $bar->actionElements());
     }
@@ -42,10 +49,13 @@ class HouseholdSwitcherTest extends TestCase
             '*/api/v1/households' => Http::response(['data' => []]),
         ]);
 
-        $bar = (new AppTabsLayout)->navBar(new Lists);
+        $screen = new Lists;
+        $bar = (new AppTabsLayout)->navBar($screen);
+        $props = $bar->toRootProps();
 
         // Sin hogar no hay selector: no se muestra una acción que lleva a una
-        // lista vacía.
+        // lista vacía, y la barra vuelve a mostrar el nombre de la pantalla.
+        $this->assertSame($screen->navTitle(), $props['title'] ?? null);
         $this->assertCount(0, $bar->getActions());
     }
 

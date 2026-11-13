@@ -60,6 +60,7 @@ return [
         'role_member' => 'Miembro',
         'unknown_member' => 'Miembro sin nombre',
         'no_members' => 'Todavía no hay otros miembros.',
+        'switch_short' => 'Hogar',
         'switch' => 'Cambiar de hogar',
         'empty_title' => 'Todavía no tenés hogar',
         'empty_subtitle' => 'Creá uno o pedile a alguien que te invite.',
