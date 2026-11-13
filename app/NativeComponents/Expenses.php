@@ -44,6 +44,12 @@ final class Expenses extends NativeComponent
 
     public bool $householdScope = false;
 
+    /** Ámbito elegido: `home` sigue al hogar activo, `personal` usa /economy/me. */
+    public string $scope = 'home';
+
+    /** @var list<array<string, mixed>> */
+    public array $movements = [];
+
     public function mount(): void
     {
         $this->load();
@@ -57,7 +63,14 @@ final class Expenses extends NativeComponent
 
         try {
             $households = app(HouseholdsService::class);
-            $householdId = $households->activeId();
+            $activeId = $households->activeId();
+
+            // Sin hogar no hay nada que elegir: el ámbito personal es el único.
+            if ($activeId === null) {
+                $this->scope = 'personal';
+            }
+
+            $householdId = $this->scope === 'home' ? $activeId : null;
             $this->householdScope = $householdId !== null;
 
             // El módulo apagado responde 404 (`EnsureModuleEnabled` hace
@@ -73,7 +86,8 @@ final class Expenses extends NativeComponent
                 }
             }
 
-            $overview = (new EconomyService)->overview($householdId);
+            $economy = new EconomyService;
+            $overview = $economy->overview($householdId);
 
             $this->currency = is_string($overview['currency'] ?? null) ? $overview['currency'] : 'EUR';
             $this->month = is_string($overview['current_month'] ?? null) ? $overview['current_month'] : null;
@@ -92,6 +106,24 @@ final class Expenses extends NativeComponent
                     : (string) __('app.expenses.no_place'),
                 'total' => Money::format((int) ($place['total_minor'] ?? 0), $this->currency),
             ], array_slice(array_values(array_filter($places, 'is_array')), 0, 5));
+
+            $movements = $economy->transactions($householdId, ['perPage' => 20]);
+
+            $this->movements = array_map(fn (array $movement): array => [
+                'id' => (string) ($movement['id'] ?? ''),
+                'title' => is_string($movement['title'] ?? null) && $movement['title'] !== ''
+                    ? $movement['title']
+                    : (string) __('app.expenses.no_title'),
+                'amount' => Money::format(
+                    (int) ($movement['amount_minor'] ?? 0),
+                    is_string($movement['currency'] ?? null) ? $movement['currency'] : $this->currency,
+                ),
+                'type' => is_string($movement['type'] ?? null) ? $movement['type'] : 'expense',
+                'date' => is_string($movement['occurred_at'] ?? null)
+                    ? substr($movement['occurred_at'], 0, 10)
+                    : '',
+                'income' => ($movement['type'] ?? null) === 'income',
+            ], array_values(array_filter($movements, 'is_array')));
         } catch (HomesideException $exception) {
             $this->needsLogin = $exception->requiresLogin();
 
@@ -102,6 +134,26 @@ final class Expenses extends NativeComponent
         } finally {
             $this->loading = false;
         }
+    }
+
+    public function useScope(string $scope): void
+    {
+        if (! in_array($scope, ['home', 'personal'], true)) {
+            return;
+        }
+
+        $this->scope = $scope;
+        $this->load();
+    }
+
+    public function newExpense(): void
+    {
+        $this->navigate('/expenses/new?scope='.$this->scope);
+    }
+
+    public function openExpense(string $transactionId): void
+    {
+        $this->navigate('/expenses/'.$transactionId.'?scope='.$this->scope);
     }
 
     public function goToLogin(): void

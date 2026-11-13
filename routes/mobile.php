@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplyAppearance;
+use App\NativeComponents\ExpenseForm;
 use App\NativeComponents\Expenses;
 use App\NativeComponents\House;
 use App\NativeComponents\HouseCreate;
@@ -49,6 +50,15 @@ Route::middleware(ApplyAppearance::class)->group(function (): void {
     });
 
     // Pantallas empujadas: barra superior con volver.
+    // Alta y edición de movimientos de economía.
+    Route::native('/expenses/new', ExpenseForm::class)
+        ->layout(AppStackLayout::class)
+        ->name('expenses.create');
+
+    Route::native('/expenses/{id}', ExpenseForm::class)
+        ->layout(AppStackLayout::class)
+        ->name('expenses.edit');
+
     // Crear hogar: se entra desde el selector.
     Route::native('/households/create', HouseCreate::class)
         ->layout(AppStackLayout::class)

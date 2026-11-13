@@ -21,14 +21,29 @@
                     <native:text class="text-sm text-theme-destructive">{{ $error }}</native:text>
                 </native:column>
             @else
+                @if ($householdScope || $scope === 'personal')
+                    <native:row class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant p-1">
+                        <native:pressable class="flex-1" @press="useScope({{ json_encode('home') }})">
+                            <native:column class="w-full items-center rounded-lg px-3 py-2 {{ $scope === 'home' ? 'bg-theme-surface' : '' }}">
+                                <native:text class="text-xs font-semibold {{ $scope === 'home' ? 'text-theme-on-surface' : 'text-theme-on-surface-variant' }}">
+                                    {{ __('app.expenses.scope_home') }}
+                                </native:text>
+                            </native:column>
+                        </native:pressable>
+                        <native:pressable class="flex-1" @press="useScope({{ json_encode('personal') }})">
+                            <native:column class="w-full items-center rounded-lg px-3 py-2 {{ $scope === 'personal' ? 'bg-theme-surface' : '' }}">
+                                <native:text class="text-xs font-semibold {{ $scope === 'personal' ? 'text-theme-on-surface' : 'text-theme-on-surface-variant' }}">
+                                    {{ __('app.expenses.scope_personal') }}
+                                </native:text>
+                            </native:column>
+                        </native:pressable>
+                    </native:row>
+                @endif
+
                 <native:column class="w-full gap-3 rounded-lg bg-theme-surface p-4">
                     <native:row class="w-full items-center gap-2">
                         <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
                             {{ __('app.expenses.this_month') }}
-                        </native:text>
-                        <native:spacer />
-                        <native:text class="text-xs text-theme-on-surface-variant">
-                            {{ $householdScope ? __('app.expenses.scope_home') : __('app.expenses.scope_personal') }}
                         </native:text>
                     </native:row>
 
@@ -46,6 +61,34 @@
                         <native:text class="text-sm font-semibold text-theme-on-surface">{{ $balance }}</native:text>
                     </native:row>
                 </native:column>
+
+                <native:button
+                    :label="__('app.expenses.new')"
+                    class="w-full"
+                    @press="newExpense"
+                />
+
+                @if ($movements !== [])
+                    <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
+                        <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                            {{ __('app.expenses.recent') }}
+                        </native:text>
+
+                        @foreach ($movements as $movement)
+                            <native:pressable class="w-full" @press="openExpense({{ json_encode($movement['id']) }})">
+                                <native:row class="w-full items-center gap-2 py-1">
+                                    <native:column class="flex-1 gap-1">
+                                        <native:text class="text-sm text-theme-on-surface">{{ $movement['title'] }}</native:text>
+                                        <native:text class="text-[10px] text-theme-on-surface-variant">{{ $movement['date'] }}</native:text>
+                                    </native:column>
+                                    <native:text class="text-sm font-semibold {{ $movement['income'] ? 'text-theme-primary' : 'text-theme-on-surface' }}">
+                                        {{ $movement['income'] ? '+' : '−' }}{{ $movement['amount'] }}
+                                    </native:text>
+                                </native:row>
+                            </native:pressable>
+                        @endforeach
+                    </native:column>
+                @endif
 
                 @if ($places !== [])
                     <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">

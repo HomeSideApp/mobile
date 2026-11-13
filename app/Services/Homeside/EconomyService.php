@@ -38,6 +38,48 @@ final class EconomyService
         ));
     }
 
+    /**
+     * Alta de movimiento. Con `idempotencyKey` el servidor no duplica si el
+     * usuario toca dos veces.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function store(?string $householdId, array $payload, ?string $idempotencyKey = null): array
+    {
+        return Session::data(
+            $this->session->client()->post($this->path($householdId, 'transactions'), $payload, $idempotencyKey),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function update(?string $householdId, string $transactionId, array $payload): array
+    {
+        return Session::data(
+            $this->session->client()->put($this->path($householdId, 'transactions').'/'.$transactionId, $payload),
+        );
+    }
+
+    public function destroy(?string $householdId, string $transactionId): void
+    {
+        Session::data(
+            $this->session->client()->delete($this->path($householdId, 'transactions').'/'.$transactionId),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function transaction(?string $householdId, string $transactionId): array
+    {
+        return Session::data(
+            $this->session->client()->get($this->path($householdId, 'transactions').'/'.$transactionId),
+        );
+    }
+
     private function path(?string $householdId, string $endpoint): string
     {
         $base = $householdId !== null && $householdId !== ''
