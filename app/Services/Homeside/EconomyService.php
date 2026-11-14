@@ -93,6 +93,40 @@ final class EconomyService
     }
 
     /**
+     * Adjunta un ticket a un movimiento ya creado.
+     *
+     * @return array<string, mixed>
+     */
+    public function attachToTransaction(?string $householdId, string $transactionId, string $contents, string $filename): array
+    {
+        return Session::data(
+            $this->session->client()->uploadFile(
+                $this->path($householdId, 'transactions').'/'.$transactionId.'/attachments',
+                'image',
+                $contents,
+                $filename,
+            ),
+        );
+    }
+
+    /**
+     * Sube un documento (ticket escaneado) para adjuntarlo a un movimiento.
+     *
+     * @return array<string, mixed>
+     */
+    public function uploadDocument(?string $householdId, string $contents, string $filename): array
+    {
+        return Session::data(
+            $this->session->client()->uploadFile(
+                $this->path($householdId, 'documents'),
+                'file',
+                $contents,
+                $filename,
+            ),
+        );
+    }
+
+    /**
      * Sube una foto de ticket y arranca el reconocimiento.
      *
      * @return array<string, mixed>

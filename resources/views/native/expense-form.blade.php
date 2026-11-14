@@ -60,6 +60,64 @@
                 />
             </native:column>
 
+            @if ($participants !== [])
+                <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
+                    <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                        {{ __('app.expense_form.participants') }}
+                    </native:text>
+                    <native:text class="text-xs text-theme-on-surface-variant">
+                        {{ __('app.expense_form.participants_hint') }}
+                    </native:text>
+
+                    @foreach ($participants as $participant)
+                        <native:pressable class="w-full" @press="toggleParticipant({{ json_encode($participant['id']) }})">
+                            <native:row class="w-full items-center gap-2 py-1">
+                                <native:icon
+                                    ios="{{ $participant['selected'] ? 'checkmark.circle.fill' : 'circle' }}"
+                                    android="{{ $participant['selected'] ? 'check_circle' : 'radio_button_unchecked' }}"
+                                    :size="18"
+                                    class="{{ $participant['selected'] ? 'text-theme-primary' : 'text-theme-on-surface-variant' }}"
+                                />
+                                <native:text class="flex-1 text-sm text-theme-on-surface">{{ $participant['name'] }}</native:text>
+                            </native:row>
+                        </native:pressable>
+                    @endforeach
+                </native:column>
+            @endif
+
+            <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
+                <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                    {{ __('app.expense_form.ticket') }}
+                </native:text>
+
+                @foreach ($attachments as $attachment)
+                    <native:row class="w-full items-center gap-2">
+                        <native:icon ios="paperclip" android="attach_file" :size="16" class="text-theme-primary" />
+                        <native:text class="flex-1 text-sm text-theme-on-surface">{{ $attachment }}</native:text>
+                    </native:row>
+                @endforeach
+
+                @if ($documentId)
+                    <native:row class="w-full items-center gap-2">
+                        <native:icon ios="paperclip" android="attach_file" :size="16" class="text-theme-primary" />
+                        <native:text class="flex-1 text-sm text-theme-on-surface">{{ $documentName }}</native:text>
+                        <native:button
+                            :label="__('app.expense_form.ticket_remove')"
+                            variant="secondary"
+                            @press="removeTicket"
+                        />
+                    </native:row>
+                @else
+                    <native:button
+                        :label="__('app.expense_form.ticket_attach')"
+                        variant="secondary"
+                        :loading="$uploading"
+                        class="w-full"
+                        @press="attachTicket"
+                    />
+                @endif
+            </native:column>
+
             <native:button
                 :label="__('app.common.save')"
                 :loading="$saving"

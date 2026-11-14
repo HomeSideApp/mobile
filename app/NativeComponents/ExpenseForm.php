@@ -5,6 +5,7 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\EconomyService;
 use App\Services\Homeside\HouseholdsService;
+use App\Services\Media\GalleryPicker;
 use App\Support\Money;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
@@ -41,6 +42,18 @@ final class ExpenseForm extends NativeComponent
 
     /** @var list<array{value: string, label: string}> */
     public array $accountOptions = [];
+
+    /** @var list<array{id: string, name: string, selected: bool}> */
+    public array $participants = [];
+
+    public ?string $documentId = null;
+
+    public ?string $documentName = null;
+
+    public bool $uploading = false;
+
+    /** @var list<string> */
+    public array $attachments = [];
 
     public bool $loading = true;
 
@@ -82,6 +95,10 @@ final class ExpenseForm extends NativeComponent
 
             $this->loadAccounts($economy);
 
+            if ($householdId !== null) {
+                $this->loadParticipants($householdId);
+            }
+
             if ($this->transactionId === null || $this->transactionId === '') {
                 return;
             }
@@ -97,6 +114,38 @@ final class ExpenseForm extends NativeComponent
             $minor = (int) ($transaction['amount_minor'] ?? 0);
             $this->amount = number_format($minor / 100, 2, '.', '');
 
+            // Participantes guardados: se preseleccionan para no perder el reparto.
+            $saved = is_array($transaction['participants'] ?? null) ? $transaction['participants'] : [];
+
+            foreach ($saved as $participant) {
+                $memberId = is_array($participant) && is_array($participant['household_member'] ?? null)
+                    ? ($participant['household_member']['id'] ?? null)
+                    : null;
+
+                if (! is_string($memberId)) {
+                    continue;
+                }
+
+                foreach ($this->participants as $index => $row) {
+                    if ($row['id'] === $memberId) {
+                        $this->participants[$index]['selected'] = true;
+                    }
+                }
+            }
+
+            $this->documentId = is_string($transaction['source_document_id'] ?? null)
+                ? $transaction['source_document_id']
+                : null;
+
+            $attachments = is_array($transaction['attachments'] ?? null) ? $transaction['attachments'] : [];
+
+            $this->attachments = array_values(array_filter(array_map(
+                fn ($attachment): ?string => is_array($attachment) && is_string($attachment['original_filename'] ?? null)
+                    ? $attachment['original_filename']
+                    : null,
+                $attachments,
+            )));
+
             $account = is_array($transaction['account'] ?? null) ? $transaction['account'] : [];
             $this->accountId = is_string($account['id'] ?? null) ? $account['id'] : '';
 
@@ -107,6 +156,116 @@ final class ExpenseForm extends NativeComponent
         } finally {
             $this->loading = false;
         }
+    }
+
+    /**
+     * Miembros del hogar para repartir el gasto. Por defecto queda elegido uno
+     * solo —quien carga—, que es el caso normal.
+     */
+    private function loadParticipants(string $householdId): void
+    {
+        $memberId = app(HouseholdsService::class)->myMemberId($householdId);
+        $members = app(HouseholdsService::class)->find($householdId)['members'] ?? [];
+
+        if (! is_array($members)) {
+            return;
+        }
+
+        $this->participants = array_values(array_map(function (array $member) use ($memberId): array {
+            $user = is_array($member['user'] ?? null) ? $member['user'] : [];
+            $id = (string) ($member['id'] ?? '');
+
+            return [
+                'id' => $id,
+                'name' => is_string($user['name'] ?? null) ? $user['name'] : '',
+                'selected' => $memberId !== null && $id === $memberId,
+            ];
+        }, array_filter($members, 'is_array')));
+    }
+
+    public function toggleParticipant(string $memberId): void
+    {
+        foreach ($this->participants as $index => $participant) {
+            if ($participant['id'] === $memberId) {
+                $this->participants[$index]['selected'] = ! $participant['selected'];
+            }
+        }
+    }
+
+    public function attachTicket(): void
+    {
+        $this->error = null;
+
+        if (! (new GalleryPicker)->pickImage()) {
+            $this->error = (string) __('app.list_detail.photo_unavailable');
+        }
+    }
+
+    /**
+     * El documento se sube apenas se elige: el movimiento sólo guarda su id.
+     */
+    public function onMediaSelected(bool $success = false, array $files = []): void
+    {
+        if (! $success || $files === []) {
+            return;
+        }
+
+        $first = $files[0] ?? null;
+        $path = is_array($first) ? ($first['path'] ?? null) : $first;
+
+        if (! is_string($path) || $path === '') {
+            return;
+        }
+
+        $contents = @file_get_contents($path);
+
+        if (! is_string($contents) || $contents === '') {
+            $this->error = (string) __('app.list_detail.photo_failed');
+
+            return;
+        }
+
+        $this->uploading = true;
+        $economy = new EconomyService;
+        $editing = $this->transactionId !== null && $this->transactionId !== '';
+
+        try {
+            if ($editing) {
+                // Un movimiento ya existe: el ticket va como adjunto, que es lo
+                // que hace la web (`POST transactions/{id}/attachments`).
+                $attachment = $economy->attachToTransaction(
+                    $this->householdId(),
+                    (string) $this->transactionId,
+                    $contents,
+                    'ticket.jpg',
+                );
+
+                $this->attachments[] = is_string($attachment['original_filename'] ?? null)
+                    ? $attachment['original_filename']
+                    : (string) __('app.expense_form.ticket_attached');
+
+                return;
+            }
+
+            $document = $economy->uploadDocument($this->householdId(), $contents, 'ticket.jpg');
+        } catch (HomesideException $exception) {
+            $this->error = $exception->getMessage();
+
+            return;
+        } finally {
+            $this->uploading = false;
+        }
+
+        $this->documentId = is_string($document['id'] ?? null) ? $document['id'] : null;
+        $this->documentName = is_string($document['original_filename'] ?? null)
+            ? $document['original_filename']
+            : (string) __('app.expense_form.ticket_attached');
+    }
+
+    public function removeTicket(): void
+    {
+        $this->documentId = null;
+        $this->documentName = null;
     }
 
     private function loadAccounts(EconomyService $economy): void
@@ -184,20 +343,23 @@ final class ExpenseForm extends NativeComponent
             $payload['account_id'] = $this->accountId;
         }
 
-        if ($householdId !== null) {
-            $memberId = app(HouseholdsService::class)->myMemberId($householdId);
+        if ($this->documentId !== null) {
+            $payload['source_document_id'] = $this->documentId;
+        }
 
-            if ($memberId === null) {
-                $this->error = (string) __('app.expense_form.member_missing');
+        if ($householdId !== null) {
+            $selected = array_values(array_filter($this->participants, fn (array $row): bool => $row['selected']));
+
+            if ($selected === []) {
+                $this->error = (string) __('app.expense_form.participants_required');
 
                 return;
             }
 
-            // Un solo participante con reparto igual: el importe entero cae en
-            // quien lo cargó, que es lo que significa "lo pagué yo".
-            $payload['participants'] = [
-                ['household_member_id' => $memberId, 'split_type' => 'equal'],
-            ];
+            $payload['participants'] = array_map(fn (array $row): array => [
+                'household_member_id' => $row['id'],
+                'split_type' => 'equal',
+            ], $selected);
         }
 
         $this->saving = true;
