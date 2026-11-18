@@ -2,6 +2,9 @@
 
 namespace App\Services\Homeside;
 
+use App\Exceptions\HomesideException;
+use App\Services\Settings\SettingsRepository;
+
 /**
  * Hogares del usuario y **hogar activo**.
  *
@@ -70,10 +73,48 @@ final class HouseholdsService
 
     public function activeId(): ?string
     {
-        $me = (new AuthService)->me();
+        try {
+            $me = (new AuthService)->me();
+        } catch (HomesideException $exception) {
+            // Sólo un fallo de transporte justifica leer el último valor conocido.
+            // Sin sesión (o sin servidor) hay que dejar subir el error: las
+            // pantallas deciden con eso si muestran el login.
+            if ($exception->reason !== HomesideException::NETWORK) {
+                throw $exception;
+            }
+
+            return $this->rememberedHouseholdId();
+        }
+
         $id = $me['active_household_id'] ?? null;
 
-        return is_string($id) && $id !== '' ? $id : null;
+        if (is_string($id) && $id !== '') {
+            $this->rememberHouseholdId($id);
+
+            return $id;
+        }
+
+        return null;
+    }
+
+    private function rememberHouseholdId(string $id): void
+    {
+        try {
+            (new SettingsRepository)->set('house.active', $id);
+        } catch (\Throwable) {
+            // En un arranque sin tabla de ajustes todavía no hay dónde guardar.
+        }
+    }
+
+    private function rememberedHouseholdId(): ?string
+    {
+        try {
+            $stored = (new SettingsRepository)->get('house.active');
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return is_string($stored) && $stored !== '' ? $stored : null;
     }
 
     /**

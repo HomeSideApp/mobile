@@ -9,6 +9,9 @@ use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
 use App\Services\Media\GalleryPicker;
 use App\Services\Media\ItemImageCache;
+use App\Services\Offline\LocalStore;
+use App\Services\Offline\Outbox;
+use App\Services\Offline\WriteThrough;
 use App\Services\Settings\LocaleService;
 use App\Support\CardColor;
 use App\Support\ProductIcon;
@@ -124,6 +127,10 @@ final class ListDetail extends NativeComponent
 
     /** Foto que se muestra en la hoja: la guardada o la recién elegida. */
     public ?string $draftImageUrl = null;
+
+    public bool $offline = false;
+
+    public int $pendingCount = 0;
 
     /** idle | uploading | done | failed */
     public string $uploadState = 'idle';
@@ -359,9 +366,26 @@ final class ListDetail extends NativeComponent
         }
 
         $this->busy = true;
+        $checked = ! $item['checked'];
+
+        // La versión que se editó viaja en el cuerpo: si el ítem cambió en el
+        // servidor mientras estábamos offline, la API responde `stale_write` en
+        // vez de pisar el cambio del otro.
+        $payload = ['is_checked' => $checked];
+
+        if (is_string($item['updated_at'] ?? null) && $item['updated_at'] !== '') {
+            $payload['updated_at'] = $item['updated_at'];
+        }
 
         try {
-            (new ListsService)->updateItem($this->listId, $itemId, ['is_checked' => ! $item['checked']], $this->householdId);
+            $applied = app(WriteThrough::class)->run(
+                'put',
+                $this->itemPath($itemId),
+                $payload,
+                fn () => (new ListsService)->updateItem($this->listId, $itemId, $payload, $this->householdId),
+                LocalStore::LIST_ITEMS,
+                $itemId,
+            );
         } catch (HomesideException $exception) {
             $this->error = $exception->getMessage();
             $this->busy = false;
@@ -369,11 +393,29 @@ final class ListDetail extends NativeComponent
             return;
         }
 
+        if (! $applied) {
+            // Sin red: se refleja en el espejo y queda en el outbox.
+            $this->pendingCount = app(Outbox::class)->pending();
+            $this->offline = true;
+        }
+
         $this->busy = false;
         $this->load();
     }
 
     // ── Acordeón de categorías ───────────────────────────────────────────
+
+    /**
+     * Ruta de la API para un ítem, según el ámbito de la lista.
+     */
+    private function itemPath(string $itemId): string
+    {
+        $base = $this->householdId !== null && $this->householdId !== ''
+            ? '/households/'.$this->householdId.'/lists'
+            : '/lists';
+
+        return $base.'/'.$this->listId.'/items/'.$itemId;
+    }
 
     public function toggleCategory(string $categoryId): void
     {

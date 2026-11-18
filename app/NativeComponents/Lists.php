@@ -7,6 +7,8 @@ use App\Services\Homeside\AppUpdateChecker;
 use App\Services\Homeside\HouseholdsService;
 use App\Services\Homeside\ListsService;
 use App\Services\Homeside\Session;
+use App\Services\Offline\LocalStore;
+use App\Services\Offline\SyncEngine;
 use App\Services\Settings\LocaleService;
 use App\Support\Concerns\HasHouseholdSwitcher;
 use Illuminate\View\View;
@@ -39,6 +41,10 @@ final class Lists extends NativeComponent
     public string $search = '';
 
     public bool $loading = true;
+
+    public bool $offline = false;
+
+    public int $pendingCount = 0;
 
     public bool $needsLogin = false;
 
@@ -156,16 +162,56 @@ final class Lists extends NativeComponent
         }
 
         try {
-            $lists = new ListsService;
+            // Best effort: si no hay red, el espejo local ya tiene lo último que
+            // se vio y la pantalla no se queda sin datos.
+            $sync = app(SyncEngine::class);
+            $result = $sync->run();
+
+            $this->pendingCount = $result['pending'];
+            $this->offline = $result['offline'];
+
+            $store = app(LocalStore::class);
             $households = app(HouseholdsService::class);
 
-            $this->households = $households->all();
+            $this->households = $store->all(LocalStore::HOUSEHOLDS);
+
+            if ($this->households === []) {
+                $this->households = $households->all();
+            }
+
             $this->activeHouseholdId = $households->activeId();
             $this->activeHouseholdName = $households->name($this->activeHouseholdId);
-            $this->personal = $this->normalizeLists($lists->personal($filters));
+
+            $all = $store->all(LocalStore::LISTS);
+
+            if ($all === []) {
+                // Primer arranque: todavía no hay espejo.
+                $lists = new ListsService;
+                $all = [
+                    ...$lists->personal($filters),
+                    ...($this->activeHouseholdId !== null ? $lists->household($this->activeHouseholdId, $filters) : []),
+                ];
+            }
+
+            $search = mb_strtolower(trim($this->search));
+            $visible = array_values(array_filter($all, function (array $list) use ($search): bool {
+                if ($search === '') {
+                    return true;
+                }
+
+                return str_contains(mb_strtolower((string) ($list['name'] ?? '')), $search);
+            }));
+
+            $this->personal = $this->normalizeLists(array_values(array_filter(
+                $visible,
+                fn (array $list): bool => ($list['household_id'] ?? null) === null,
+            )));
 
             $this->householdLists = $this->activeHouseholdId !== null
-                ? $this->normalizeLists($lists->household($this->activeHouseholdId, $filters))
+                ? $this->normalizeLists(array_values(array_filter(
+                    $visible,
+                    fn (array $list): bool => ($list['household_id'] ?? null) === $this->activeHouseholdId,
+                )))
                 : [];
         } catch (HomesideException $exception) {
             $this->needsLogin = $exception->requiresLogin();
