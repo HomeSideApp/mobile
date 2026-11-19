@@ -79,7 +79,7 @@
                                 <native:pressable
                                     :native:key="'res-'.$product['id']"
                                     class="flex-1 items-center gap-2 rounded-lg p-3 bg-[{{ $product['color'] }}]"
-                                    @press="addProduct({{ json_encode($product['id']) }})"
+                                    @press="addProduct({{ json_encode($product['id']) }}, {{ json_encode($product['name']) }}, {{ json_encode($product['icon'] ?? null) }})"
                                 >
                                     <native:row class="w-full items-center gap-2">
                                         @if ($product['icon_url'] !== null)
@@ -196,7 +196,7 @@
                                 <native:pressable
                                     :native:key="'recent-'.$product['id']"
                                     class="h-[92] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $product['color'] }}]"
-                                    @press="addProduct({{ json_encode($product['id']) }})"
+                                    @press="addProduct({{ json_encode($product['id']) }}, {{ json_encode($product['name']) }}, {{ json_encode($product['icon'] ?? null) }})"
                                 >
                                     @if ($product['icon_url'] !== null)
                                         <native:image :src="$product['icon_url']" class="h-[24] w-[24]" fit="contain" />
@@ -255,7 +255,7 @@
                                                     <native:pressable
                                                         :native:key="'catprod-'.$product['id']"
                                                         class="h-[92] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $product['color'] }}]"
-                                                        @press="addProduct({{ json_encode($product['id']) }})"
+                                                        @press="addProduct({{ json_encode($product['id']) }}, {{ json_encode($product['name']) }}, {{ json_encode($product['icon'] ?? null) }})"
                                                     >
                                                         @if ($product['icon_url'] !== null)
                                                             <native:image :src="$product['icon_url']" class="h-[24] w-[24]" fit="contain" />

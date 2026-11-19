@@ -11,10 +11,12 @@ use App\Services\Media\GalleryPicker;
 use App\Services\Media\ItemImageCache;
 use App\Services\Offline\LocalStore;
 use App\Services\Offline\Outbox;
+use App\Services\Offline\SyncEngine;
 use App\Services\Offline\WriteThrough;
 use App\Services\Settings\LocaleService;
 use App\Support\CardColor;
 use App\Support\ProductIcon;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\On;
 use Native\Mobile\Edge\NativeComponent;
@@ -176,30 +178,66 @@ final class ListDetail extends NativeComponent
         $this->loading = true;
         $this->error = null;
 
-        $lists = new ListsService;
-        $catalog = new CatalogService;
         $images = new ItemImageCache;
 
-        try {
-            $list = $lists->show($this->listId, $this->householdId);
-            $categories = $catalog->categories();
-            $recent = $catalog->recent(24, $this->householdId);
-        } catch (HomesideException $exception) {
-            $this->needsLogin = $exception->requiresLogin();
-            $this->error = $exception->getMessage();
-            $this->loading = false;
+        // Best effort: drena el outbox y trae el delta. Sin red sigue de largo
+        // con lo que el espejo ya tenga.
+        $result = app(SyncEngine::class)->run();
+        $this->pendingCount = $result['pending'];
+        $this->offline = $result['offline'];
+        $this->needsLogin = $this->needsLogin || (bool) ($result['needsLogin'] ?? false);
 
-            return;
+        $store = app(LocalStore::class);
+        $list = $store->find(LocalStore::LISTS, $this->listId);
+        $items = $store->itemsOf($this->listId);
+
+        if ($list === null && $items === []) {
+            // Primer arranque, o una lista recién creada: todavía no hay espejo.
+            try {
+                $list = (new ListsService)->show($this->listId, $this->householdId);
+            } catch (HomesideException $exception) {
+                $this->needsLogin = $exception->requiresLogin();
+                $this->error = $exception->getMessage();
+                $this->loading = false;
+
+                return;
+            }
+
+            $items = is_array($list['items'] ?? null) ? $list['items'] : [];
         }
 
-        $this->name = is_string($list['name'] ?? null) ? $list['name'] : __('app.list_detail.title');
-
-        $items = is_array($list['items'] ?? null) ? $list['items'] : [];
+        $this->name = is_string($list['name'] ?? null) && $list['name'] !== ''
+            ? $list['name']
+            : __('app.list_detail.title');
 
         $this->pending = array_values(array_filter(
             array_map(fn (array $item): array => $this->normalizeItem($item, $images), $items),
             fn (array $item): bool => ! $item['checked'],
         ));
+
+        $this->loadCatalog();
+
+        $this->loading = false;
+    }
+
+    /**
+     * Catálogo de categorías y recientes.
+     *
+     * Sin red no es imprescindible: la lista se sigue viendo y se puede tildar,
+     * así que se conserva lo último cargado en vez de vaciar la pantalla.
+     */
+    private function loadCatalog(): void
+    {
+        $catalog = new CatalogService;
+
+        try {
+            $categories = $catalog->categories();
+            $recent = $catalog->recent(24, $this->householdId);
+        } catch (HomesideException $exception) {
+            $this->needsLogin = $this->needsLogin || $exception->requiresLogin();
+
+            return;
+        }
 
         $this->categories = array_map(fn (array $category): array => [
             'id' => (string) ($category['id'] ?? ''),
@@ -214,8 +252,6 @@ final class ListDetail extends NativeComponent
         $this->recent = array_map(fn (array $product): array => $this->normalizeProduct($product), $recent);
 
         $this->loadStores();
-
-        $this->loading = false;
     }
 
     private function refreshIconTint(): void
@@ -302,7 +338,7 @@ final class ListDetail extends NativeComponent
         $this->searchDone = false;
     }
 
-    public function addProduct(string $productId): void
+    public function addProduct(string $productId, string $name = '', ?string $icon = null): void
     {
         if ($this->listId === null || $this->busy) {
             return;
@@ -310,13 +346,50 @@ final class ListDetail extends NativeComponent
 
         $this->busy = true;
 
+        $lists = new ListsService;
+        $product = $name !== '' ? ['name' => $name, 'icon' => $icon] : $this->knownProduct($productId);
+
+        // Id propio: el ítem existe en el teléfono con su id final antes de
+        // sincronizar, así el espejo no tiene que remapear nada después.
+        $clientId = (string) Str::uuid();
+
+        $payload = [
+            'id' => $clientId,
+            'product_id' => $productId,
+            'quantity' => 1,
+        ];
+
         try {
-            (new ListsService)->addItem($this->listId, ['product_id' => $productId, 'quantity' => 1], $this->householdId);
+            $applied = app(WriteThrough::class)->run(
+                'post',
+                $this->itemsPath(),
+                $payload,
+                fn () => $lists->addItem($this->listId, $payload, $this->householdId),
+                LocalStore::LIST_ITEMS,
+                $clientId,
+            );
         } catch (HomesideException $exception) {
             $this->error = $exception->getMessage();
             $this->busy = false;
 
             return;
+        }
+
+        if (! $applied) {
+            // Sin red: la fila optimista entra al espejo para que se vea ya.
+            app(LocalStore::class)->put(LocalStore::LIST_ITEMS, [
+                'id' => $clientId,
+                'list_id' => $this->listId,
+                'product_id' => $productId,
+                'custom_name' => $product['name'] ?? null,
+                'icon' => $product['icon'] ?? null,
+                'quantity' => 1,
+                'is_checked' => false,
+                'updated_at' => now()->toIso8601String(),
+            ]);
+
+            $this->pendingCount = app(Outbox::class)->pending();
+            $this->offline = true;
         }
 
         $this->busy = false;
@@ -332,18 +405,32 @@ final class ListDetail extends NativeComponent
 
         $this->busy = true;
 
+        $lists = new ListsService;
+        $product = ['name' => trim($this->search)];
+        $item = ['quantity' => 1];
+
         try {
-            (new ListsService)->quickCreateItem(
-                $this->listId,
-                ['name' => trim($this->search)],
-                ['quantity' => 1],
-                $this->householdId,
+            // `quick-create` no acepta id de cliente (crea el producto y el ítem
+            // juntos), así que sin red no hay fila optimista: el ítem aparece
+            // cuando la operación se aplica y el delta lo trae.
+            $applied = app(WriteThrough::class)->run(
+                'post',
+                $this->itemsPath().'/quick-create',
+                ['product' => $product, 'item' => $item],
+                fn () => $lists->quickCreateItem($this->listId, $product, $item, $this->householdId),
+                LocalStore::LIST_ITEMS,
+                null,
             );
         } catch (HomesideException $exception) {
             $this->error = $exception->getMessage();
             $this->busy = false;
 
             return;
+        }
+
+        if (! $applied) {
+            $this->pendingCount = app(Outbox::class)->pending();
+            $this->offline = true;
         }
 
         $this->busy = false;
@@ -408,13 +495,40 @@ final class ListDetail extends NativeComponent
     /**
      * Ruta de la API para un ítem, según el ámbito de la lista.
      */
-    private function itemPath(string $itemId): string
+    private function itemsPath(): string
     {
         $base = $this->householdId !== null && $this->householdId !== ''
             ? '/households/'.$this->householdId.'/lists'
             : '/lists';
 
-        return $base.'/'.$this->listId.'/items/'.$itemId;
+        return $base.'/'.$this->listId.'/items';
+    }
+
+    private function itemPath(string $itemId): string
+    {
+        return $this->itemsPath().'/'.$itemId;
+    }
+
+    /**
+     * Producto ya visible en la pantalla, para poder pintar la fila optimista.
+     *
+     * @return array<string, mixed>
+     */
+    private function knownProduct(string $productId): array
+    {
+        $pool = [...$this->recent, ...$this->results];
+
+        foreach ($this->categories as $category) {
+            $pool = [...$pool, ...(is_array($category['products'] ?? null) ? $category['products'] : [])];
+        }
+
+        foreach ($pool as $product) {
+            if (is_array($product) && ($product['id'] ?? null) === $productId) {
+                return $product;
+            }
+        }
+
+        return [];
     }
 
     public function toggleCategory(string $categoryId): void
@@ -958,6 +1072,7 @@ final class ListDetail extends NativeComponent
         return [
             'id' => (string) ($product['id'] ?? ''),
             'name' => (string) ($product['name'] ?? ''),
+            'icon' => is_string($product['icon'] ?? null) ? $product['icon'] : null,
             'icon_url' => ProductIcon::url(is_string($product['icon'] ?? null) ? $product['icon'] : null),
             'category_name' => is_string($category['name'] ?? null) ? $category['name'] : null,
             'color' => $color,

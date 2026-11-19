@@ -36,18 +36,25 @@ final class SyncEngine
      */
     public function run(): array
     {
-        $result = ['pulled' => 0, 'pushed' => 0, 'pending' => 0, 'failed' => 0, 'offline' => false];
+        $result = [
+            'pulled' => 0, 'pushed' => 0, 'pending' => 0, 'failed' => 0,
+            'offline' => false, 'needsLogin' => false,
+        ];
 
         try {
             $pushed = $this->push();
-        } catch (HomesideException) {
-            // Sin red: lo pendiente queda en el outbox y la UI sigue con el espejo.
+        } catch (HomesideException $exception) {
+            // Sin red: lo pendiente queda en el outbox y la UI sigue con el
+            // espejo. Una sesión vencida **no** es falta de red: mostrarla como
+            // "sin conexión" dejaría al usuario tildando cosas que nunca se van
+            // a sincronizar.
             return [
                 'pulled' => 0,
                 'pushed' => 0,
                 'pending' => $this->pendingCount(),
                 'failed' => 0,
-                'offline' => true,
+                'offline' => ! $exception->requiresLogin(),
+                'needsLogin' => $exception->requiresLogin(),
             ];
         }
 
@@ -56,8 +63,9 @@ final class SyncEngine
 
         try {
             $result['pulled'] = $this->pull();
-        } catch (HomesideException) {
-            $result['offline'] = true;
+        } catch (HomesideException $exception) {
+            $result['offline'] = ! $exception->requiresLogin();
+            $result['needsLogin'] = $exception->requiresLogin();
         }
 
         // Tickets capturados sin red: su endpoint no pasa por /sync/push.

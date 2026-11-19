@@ -26,7 +26,7 @@ final class Outbox
     ): OutboxEntry {
         return OutboxEntry::query()->create([
             'op' => strtolower($op),
-            'path' => $path,
+            'path' => $this->apiPath($path),
             'payload' => json_encode($payload),
             'idempotency_key' => (string) Str::uuid(),
             'entity' => $entity,
@@ -37,6 +37,24 @@ final class Outbox
             'created_at' => now()->toIso8601String(),
             'sent_at' => null,
         ]);
+    }
+
+    /**
+     * Ruta API-relativa, como la espera `/sync/push`.
+     *
+     * El cliente HTTP resuelve las rutas contra `.../api/v1`, así que las
+     * pantallas encolan `/lists/{id}/items/{item}` y eso online funciona. El
+     * push es otra historia: su contrato es `/v1/...` y el servidor sólo le
+     * antepone `/api` cuando ve ese prefijo. Sin la normalización la operación
+     * apunta a una ruta inexistente y queda fallando para siempre.
+     */
+    private function apiPath(string $path): string
+    {
+        $path = '/'.ltrim($path, '/');
+
+        return str_starts_with($path, '/v1/') || $path === '/v1'
+            ? $path
+            : '/v1'.$path;
     }
 
     public function pending(): int

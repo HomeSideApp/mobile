@@ -69,9 +69,26 @@ class ListDetailTest extends TestCase
         ];
     }
 
+    /**
+     * El delta de sincronización: la pantalla lo pide al abrir.
+     *
+     * @return array<string, mixed>
+     */
+    private function deltaPayload(): array
+    {
+        return ['data' => [
+            'cursor' => 'c1',
+            'has_more' => false,
+            'changes' => ['lists' => [], 'list_items' => []],
+            'deleted' => ['lists' => [], 'list_items' => [], 'economy_transactions' => []],
+        ]];
+    }
+
     private function fakeScreen(): void
     {
         Http::fake([
+            // La pantalla sincroniza al abrir, así que el delta también se stubea.
+            '*/api/v1/sync/changes*' => Http::response($this->deltaPayload()),
             '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
             '*/api/v1/categories*' => Http::response(['data' => [
                 ['id' => 'cat-1', 'name' => 'Lácteos', 'color' => '#42A5F5'],
@@ -522,6 +539,7 @@ class ListDetailTest extends TestCase
     {
         $this->connect();
         Http::fake([
+            '*/api/v1/sync/changes*' => Http::response($this->deltaPayload()),
             '*/api/v1/households/household-1/lists/list-1' => Http::response($this->listPayload()),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
