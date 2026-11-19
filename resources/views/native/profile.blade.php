@@ -70,11 +70,13 @@
                         @endif
                     </native:column>
 
-                    @if ($downloadStatus === 'running')
+                    @if (in_array($downloadStatus, ['pending', 'running', 'paused'], true))
                         <native:row class="w-full items-center gap-2">
                             <native:activity-indicator />
                             <native:text class="flex-1 text-sm text-theme-on-surface">
-                                {{ __('app.updates.downloading', ['progress' => $downloadProgress]) }}
+                                {{ $downloadStatus === 'running'
+                                    ? __('app.updates.downloading', ['progress' => $downloadProgress])
+                                    : __('app.updates.'.($downloadStatus === 'paused' ? 'waiting_network' : 'queued')) }}
                             </native:text>
                         </native:row>
                     @endif
@@ -84,7 +86,7 @@
                             ? __('app.updates.retry')
                             : ($downloadStatus === 'successful' ? __('app.updates.install') : __('app.updates.download'))"
                         class="w-full"
-                        :disabled="$downloadStatus === 'running'"
+                        :disabled="in_array($downloadStatus, ['pending', 'running', 'paused'], true)"
                         @press="downloadUpdate"
                     />
 

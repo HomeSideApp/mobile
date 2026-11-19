@@ -363,7 +363,11 @@ final class Profile extends NativeComponent
             return;
         }
 
-        if (! in_array($this->downloadStatus, ['running', 'idle'], true)) {
+        // `pending` y `paused` son estados **vivos**, no finales: el gestor de
+        // descargas los usa al encolar y al esperar red. Cortar el sondeo ahí
+        // dejaba la pantalla congelada en el último porcentaje, con el botón
+        // habilitado otra vez, como si la descarga se hubiera cortado sola.
+        if (! in_array($this->downloadStatus, ['idle', 'pending', 'running', 'paused'], true)) {
             return;
         }
 
@@ -381,10 +385,46 @@ final class Profile extends NativeComponent
 
         match ($this->downloadStatus) {
             'successful' => $this->installDownloadedUpdate(),
-            'failed' => $this->downloadMessage = __('app.updates.download_failed'),
+            'failed' => $this->downloadMessage = $this->describeDownloadFailure($status),
             'paused' => $this->downloadMessage = __('app.updates.paused'),
+            // La fila desapareció del gestor (se limpió la descarga o el
+            // sistema la tiró): sin esto la pantalla quedaba muda para siempre.
+            'unknown' => $this->failDownload('download_lost'),
             default => $this->downloadMessage = null,
         };
+    }
+
+    /**
+     * Traduce el motivo que da el gestor de descargas de Android.
+     *
+     * Sin esto el usuario veía «la descarga falló» y no había forma de saber
+     * si era espacio, red o un archivo viejo ocupando el destino.
+     *
+     * @param  array<string, mixed>  $status
+     */
+    private function describeDownloadFailure(array $status): string
+    {
+        $reason = is_numeric($status['reason'] ?? null) ? (int) $status['reason'] : null;
+
+        $key = match ($reason) {
+            488 => 'file_exists',      // ERROR_FILE_ALREADY_EXISTS
+            249 => 'no_space',         // ERROR_INSUFFICIENT_SPACE
+            489, 495 => 'network',     // ERROR_CANNOT_RESUME / ERROR_HTTP_DATA_ERROR
+            490, 492, 493 => 'server',  // redirecciones y códigos HTTP inesperados
+            default => 'download_failed',
+        };
+
+        $message = __("app.updates.failed_reasons.{$key}");
+
+        // El código crudo queda a la vista: es lo único que permite distinguir
+        // dos fallas del mismo tipo cuando el usuario las reporta.
+        return $reason === null ? $message : "{$message} (Android {$reason})";
+    }
+
+    private function failDownload(string $reasonKey): void
+    {
+        $this->downloadStatus = 'failed';
+        $this->downloadMessage = __("app.updates.failed_reasons.{$reasonKey}");
     }
 
     private function installDownloadedUpdate(): void
