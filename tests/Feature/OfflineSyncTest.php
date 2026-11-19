@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Exceptions\HomesideException;
+use App\Models\MirrorEntity;
 use App\Models\OutboxEntry;
 use App\Services\Offline\LocalStore;
 use App\Services\Offline\Outbox;
+use App\Services\Offline\PendingImports;
 use App\Services\Offline\SyncEngine;
 use App\Services\Offline\SyncState;
 use App\Services\Offline\WriteThrough;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\InteractsWithHomeside;
 use Tests\TestCase;
@@ -136,6 +139,65 @@ class OfflineSyncTest extends TestCase
         $this->assertSame('failed', $entry->state);
         // Un rechazo es del usuario/servidor, no de la red: no se reintenta solo.
         $this->assertSame(0, app(Outbox::class)->pending());
+    }
+
+    public function test_a_ticket_captured_offline_is_queued_and_flushed_later(): void
+    {
+        $this->connect();
+
+        $imports = app(PendingImports::class);
+        $imports->enqueue(str_repeat('x', 256), 'ticket.jpg', 'household-1');
+
+        $this->assertSame(1, $imports->count());
+
+        // Un solo fake controlado por bandera: `Http::fake()` acumula stubs y el
+        // primero que matchea gana, así que dos llamadas no cambian el escenario.
+        $offline = true;
+
+        Http::fake(function () use (&$offline) {
+            if ($offline) {
+                throw new ConnectionException('sin red');
+            }
+
+            return Http::response(['data' => ['id' => 'import-1', 'status' => 'queued']], 201);
+        });
+
+        // Sin red: se queda en la cola y no se reintenta en vano.
+        $this->assertSame(0, $imports->flush());
+        $this->assertSame(1, $imports->count());
+
+        // Con red: se sube y la foto se borra del disco.
+        $offline = false;
+
+        $this->assertSame(1, $imports->flush());
+        $this->assertSame(0, $imports->count());
+    }
+
+    public function test_old_tombstones_are_pruned_but_live_rows_are_kept(): void
+    {
+        $this->connect();
+
+        app(LocalStore::class)->put(LocalStore::LISTS, ['id' => 'viva', 'name' => 'Compra']);
+
+        MirrorEntity::query()->create([
+            'entity' => LocalStore::LISTS,
+            'id' => 'vieja',
+            'payload' => '{"id":"vieja"}',
+            'updated_at' => null,
+            'deleted_at' => now()->subDays(60)->toIso8601String(),
+            'fetched_at' => now()->toIso8601String(),
+        ]);
+
+        Http::fake(['*/api/v1/sync/changes*' => Http::response($this->page([
+            'changes' => ['lists' => []],
+        ]))]);
+
+        app(SyncEngine::class)->run();
+
+        // El tombstone viejo se va; la copia viva se queda: es lo único que el
+        // usuario tiene si no hay red.
+        $this->assertFalse(MirrorEntity::query()->where('id', 'vieja')->exists());
+        $this->assertTrue(MirrorEntity::query()->where('id', 'viva')->exists());
     }
 
     public function test_write_through_enqueues_only_on_transport_failure(): void

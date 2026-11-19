@@ -6,6 +6,7 @@ use App\Exceptions\HomesideException;
 use App\Services\Homeside\EconomyService;
 use App\Services\Homeside\HouseholdsService;
 use App\Services\Media\GalleryPicker;
+use App\Services\Offline\PendingImports;
 use App\Support\Money;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Poll;
@@ -93,6 +94,18 @@ final class ExpenseTicket extends NativeComponent
         try {
             $import = (new EconomyService)->createImport($this->householdId(), $contents, 'ticket.jpg');
         } catch (HomesideException $exception) {
+            $this->busy = false;
+
+            // Sin red el ticket no se pierde: la foto queda en la cola y se sube
+            // cuando vuelva la conexión. `imports` no viaja por /sync/push.
+            if ($exception->reason === HomesideException::NETWORK) {
+                app(PendingImports::class)->enqueue($contents, 'ticket.jpg', $this->householdId());
+                $this->status = 'offline';
+                $this->error = null;
+
+                return;
+            }
+
             $this->error = $exception->getMessage();
             $this->status = 'idle';
 

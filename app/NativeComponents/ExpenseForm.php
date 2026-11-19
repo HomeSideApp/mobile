@@ -6,7 +6,10 @@ use App\Exceptions\HomesideException;
 use App\Services\Homeside\EconomyService;
 use App\Services\Homeside\HouseholdsService;
 use App\Services\Media\GalleryPicker;
+use App\Services\Offline\LocalStore;
+use App\Services\Offline\WriteThrough;
 use App\Support\Money;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
 
@@ -364,17 +367,60 @@ final class ExpenseForm extends NativeComponent
 
         $this->saving = true;
 
-        try {
-            $economy = new EconomyService;
+        $economy = new EconomyService;
+        $creating = $this->transactionId === null || $this->transactionId === '';
 
-            if ($this->transactionId === null || $this->transactionId === '') {
-                // La clave sale del contenido + la fecha: dos toques del mismo
-                // formulario colapsan en un solo movimiento.
+        try {
+            if ($creating) {
+                // Id propio: el movimiento existe en el teléfono con su id final
+                // antes de sincronizar, así el outbox no tiene que remapear nada.
+                $clientId = (string) Str::uuid();
+                $payload['id'] = $clientId;
+
+                $path = ($householdId !== null ? '/households/'.$householdId : '').'/economy'.($householdId !== null ? '' : '/me').'/transactions';
+                $path = $householdId !== null
+                    ? '/households/'.$householdId.'/economy/transactions'
+                    : '/economy/me/transactions';
+
                 $key = 'expense:'.md5($householdId.'|'.$title.'|'.$minor.'|'.$this->occurredAt.'|'.$this->type);
 
-                $economy->store($householdId, $payload, $key);
+                $applied = app(WriteThrough::class)->run(
+                    'post',
+                    $path,
+                    $payload,
+                    fn () => $economy->store($householdId, $payload, $key),
+                    LocalStore::TRANSACTIONS,
+                    $clientId,
+                );
+
+                if (! $applied) {
+                    app(LocalStore::class)->put(LocalStore::TRANSACTIONS, [
+                        'id' => $clientId,
+                        'type' => $this->type,
+                        'scope' => $payload['scope'],
+                        'title' => $title,
+                        'amount_minor' => $minor,
+                        'currency' => $this->currency,
+                        'occurred_at' => $this->occurredAt !== '' ? $this->occurredAt.'T00:00:00Z' : null,
+                        'place' => $payload['place'],
+                        'notes' => $payload['notes'],
+                        'household_id' => $householdId,
+                        'updated_at' => now()->toIso8601String(),
+                    ]);
+                }
             } else {
-                $economy->update($householdId, $this->transactionId, $payload);
+                $path = ($householdId !== null
+                    ? '/households/'.$householdId.'/economy/transactions'
+                    : '/economy/me/transactions').'/'.$this->transactionId;
+
+                app(WriteThrough::class)->run(
+                    'put',
+                    $path,
+                    $payload,
+                    fn () => $economy->update($householdId, (string) $this->transactionId, $payload),
+                    LocalStore::TRANSACTIONS,
+                    (string) $this->transactionId,
+                );
             }
         } catch (HomesideException $exception) {
             $this->error = $exception->getMessage();
@@ -405,13 +451,29 @@ final class ExpenseForm extends NativeComponent
 
         $this->error = null;
 
+        $householdId = $this->householdId();
+        $path = ($householdId !== null
+            ? '/households/'.$householdId.'/economy/transactions'
+            : '/economy/me/transactions').'/'.$this->transactionId;
+
         try {
-            (new EconomyService)->destroy($this->householdId(), $this->transactionId);
+            $applied = app(WriteThrough::class)->run(
+                'delete',
+                $path,
+                [],
+                fn () => (new EconomyService)->destroy($householdId, (string) $this->transactionId),
+                LocalStore::TRANSACTIONS,
+                (string) $this->transactionId,
+            );
         } catch (HomesideException $exception) {
             $this->confirmDelete = false;
             $this->error = $exception->getMessage();
 
             return;
+        }
+
+        if (! $applied) {
+            app(LocalStore::class)->forget(LocalStore::TRANSACTIONS, (string) $this->transactionId);
         }
 
         $this->confirmDelete = false;

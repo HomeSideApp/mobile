@@ -55,6 +55,7 @@ return [
         'confirm' => 'Confirmar gasto',
         'discard' => 'Descartar',
         'retry' => 'Probar con otra foto',
+        'queued_offline' => 'Guardamos la foto. Se va a leer cuando vuelva la conexión.',
         'failed' => 'No pudimos leer el ticket. Probá con una foto más nítida.',
         'default_title' => 'Ticket',
     ],

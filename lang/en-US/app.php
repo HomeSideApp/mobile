@@ -55,6 +55,7 @@ return [
         'confirm' => 'Confirm expense',
         'discard' => 'Discard',
         'retry' => 'Try another photo',
+        'queued_offline' => 'We saved the photo. It will be read when you are back online.',
         'failed' => 'We could not read the receipt. Try a sharper photo.',
         'default_title' => 'Receipt',
     ],

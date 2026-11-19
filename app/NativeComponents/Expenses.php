@@ -5,6 +5,8 @@ namespace App\NativeComponents;
 use App\Exceptions\HomesideException;
 use App\Services\Homeside\EconomyService;
 use App\Services\Homeside\HouseholdsService;
+use App\Services\Offline\LocalStore;
+use App\Services\Offline\SyncEngine;
 use App\Support\Concerns\HasHouseholdSwitcher;
 use App\Support\Money;
 use Illuminate\View\View;
@@ -44,6 +46,8 @@ final class Expenses extends NativeComponent
 
     public bool $householdScope = false;
 
+    public bool $offline = false;
+
     /** Ámbito elegido: `home` sigue al hogar activo, `personal` usa /economy/me. */
     public string $scope = 'home';
 
@@ -55,6 +59,12 @@ final class Expenses extends NativeComponent
 
     public function mount(): void
     {
+        $this->load();
+    }
+
+    public function refreshFromServer(): void
+    {
+        $this->offline = app(SyncEngine::class)->run()['offline'];
         $this->load();
     }
 
@@ -110,10 +120,15 @@ final class Expenses extends NativeComponent
                 'total' => Money::format((int) ($place['total_minor'] ?? 0), $this->currency),
             ], array_slice(array_values(array_filter($places, 'is_array')), 0, 5));
 
-            $movements = $economy->transactions($householdId, [
-                'perPage' => 30,
-                ...$this->rangeQuery(),
-            ]);
+            $store = app(LocalStore::class);
+            $cached = $store->all(LocalStore::TRANSACTIONS);
+
+            $movements = $cached !== []
+                ? $this->filterCached($cached, $householdId)
+                : $economy->transactions($householdId, [
+                    'perPage' => 30,
+                    ...$this->rangeQuery(),
+                ]);
 
             $this->movements = array_map(fn (array $movement): array => [
                 'id' => (string) ($movement['id'] ?? ''),
@@ -140,6 +155,49 @@ final class Expenses extends NativeComponent
         } finally {
             $this->loading = false;
         }
+    }
+
+    /**
+     * Aplica el ámbito y el rango sobre el espejo, donde no hay servidor que
+     * filtre. Mismo criterio que la query: fecha descendente y tope de 30.
+     *
+     * @param  array<int, array<string, mixed>>  $cached
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterCached(array $cached, ?string $householdId): array
+    {
+        $range = $this->rangeQuery();
+        $from = $range['from'] ?? null;
+        $to = $range['to'] ?? null;
+
+        $filtered = array_values(array_filter($cached, function (array $row) use ($householdId, $from, $to): bool {
+            $scopeOk = $householdId === null
+                ? ($row['household_id'] ?? null) === null
+                : ($row['household_id'] ?? null) === $householdId;
+
+            if (! $scopeOk) {
+                return false;
+            }
+
+            $date = is_string($row['occurred_at'] ?? null) ? substr($row['occurred_at'], 0, 10) : null;
+
+            if ($date === null) {
+                return true;
+            }
+
+            if ($from !== null && $date < $from) {
+                return false;
+            }
+
+            return ! ($to !== null && $date > $to);
+        }));
+
+        usort($filtered, fn (array $a, array $b): int => strcmp(
+            (string) ($b['occurred_at'] ?? ''),
+            (string) ($a['occurred_at'] ?? ''),
+        ));
+
+        return array_slice($filtered, 0, 30);
     }
 
     /**

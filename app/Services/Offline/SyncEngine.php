@@ -3,6 +3,7 @@
 namespace App\Services\Offline;
 
 use App\Exceptions\HomesideException;
+use App\Models\MirrorEntity;
 use App\Models\OutboxEntry;
 use App\Services\Homeside\Session;
 
@@ -18,10 +19,14 @@ final class SyncEngine
     /** La API acepta hasta 50 operaciones por lote. */
     private const int BATCH_SIZE = 50;
 
+    /** Días que se guardan los tombstones antes de podarlos. */
+    private const int TOMBSTONE_DAYS = 30;
+
     public function __construct(
         private readonly LocalStore $store = new LocalStore,
         private readonly SyncState $state = new SyncState,
         private readonly Session $session = new Session,
+        private readonly PendingImports $imports = new PendingImports,
     ) {}
 
     /**
@@ -54,6 +59,13 @@ final class SyncEngine
         } catch (HomesideException) {
             $result['offline'] = true;
         }
+
+        // Tickets capturados sin red: su endpoint no pasa por /sync/push.
+        if (! $result['offline']) {
+            $this->imports->flush();
+        }
+
+        $this->pruneTombstones();
 
         $result['pending'] = $this->pendingCount();
 
@@ -213,6 +225,22 @@ final class SyncEngine
         }
 
         $this->store->put($entity, $resource);
+    }
+
+    /**
+     * Suelta los tombstones viejos.
+     *
+     * Las filas vivas **no** se podan: en el teléfono son la única copia que el
+     * usuario tiene cuando no hay red.
+     */
+    private function pruneTombstones(): void
+    {
+        $limit = now()->subDays(self::TOMBSTONE_DAYS)->toIso8601String();
+
+        MirrorEntity::query()
+            ->whereNotNull('deleted_at')
+            ->where('deleted_at', '<', $limit)
+            ->delete();
     }
 
     public function pendingCount(): int

@@ -72,6 +72,14 @@
                         @press="confirm"
                     />
                 </native:row>
+            @elseif ($status === 'offline')
+                <native:column class="w-full items-center gap-3 rounded-lg bg-theme-surface-variant px-4 py-10">
+                    <native:icon ios="clock.arrow.circlepath" android="schedule" :size="30" class="text-theme-primary" />
+                    <native:text class="text-center text-sm text-theme-on-surface">
+                        {{ __('app.ticket.queued_offline') }}
+                    </native:text>
+                    <native:button :label="__('app.ticket.pick')" class="w-full" @press="discard" />
+                </native:column>
             @else
                 <native:column class="w-full gap-3 rounded-lg bg-theme-surface p-4">
                     <native:text class="text-sm text-theme-destructive">{{ __('app.ticket.failed') }}</native:text>
