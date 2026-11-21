@@ -55,6 +55,18 @@ make emulator-logs      # logs en vivo
 make emulator-down      # apagar (libera ~3 GB de RAM)
 ```
 
+Dos trampas que cuestan una tarde cada una:
+
+- **La imagen manda el entrypoint.** Si el contenedor existe de una imagen
+  vieja, arranca con un script viejo aunque el repo tenga otro, y el emulador
+  muere con `Running multiple emulators with the same AVD` por un lock que
+  nadie limpia. Después de cambiar `docker/emulator-entrypoint.sh`:
+  `make emulator-build`, y recrear el contenedor (`docker compose --profile
+  emulator rm -sf emulator`), porque `up` reusa el que ya existe.
+- **El emulador se deja matar por OOM.** Con 1536 MB y la stack de Sail
+  levantada, el kernel lo mata (`docker inspect` muestra `OOMKilled=true`,
+  exit 137). Bajá a `EMULATOR_MEMORY=1024` o paré MySQL mientras lo usás.
+
 Cómo se cablea: el contenedor `emulator` levanta `adb -a nodaemon server` en
 `5037` y el emulador headless (SwiftShader, sin ventana). El contenedor `app`
 se conecta con `ADB_SERVER_SOCKET=tcp:emulator:5037`, así `native:run` ve el
