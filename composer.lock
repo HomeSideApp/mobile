@@ -1306,7 +1306,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/HomeSideApp/NativePHP-APK-Updater.git",
-                "reference": "b3fc3963f5db682c291d99ea22284af8a71398fd"
+                "reference": "728813bc7bd992e78b99daf6b1e4804cc58de604"
             },
             "require": {
                 "nativephp/mobile": "^4.6",
@@ -1368,7 +1368,7 @@
                 "ota",
                 "updater"
             ],
-            "time": "2026-11-12T00:10:00+00:00"
+            "time": "2026-11-19T21:54:09+00:00"
         },
         {
             "name": "laravel/framework",
