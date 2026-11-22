@@ -63,6 +63,15 @@ Dos trampas que cuestan una tarde cada una:
   nadie limpia. Después de cambiar `docker/emulator-entrypoint.sh`:
   `make emulator-build`, y recrear el contenedor (`docker compose --profile
   emulator rm -sf emulator`), porque `up` reusa el que ya existe.
+- **El emulador se cae solo bajo carga.** Además del OOM (exit 137), hay
+  segfaults (exit 139) cuando el host está saturado: este equipo tiene 2 CPUs y
+  un arranque de app tarda minutos. Para sesiones largas conviene parar Sail
+  (`docker stop homeside-laravel.test-1 homeside-mysql-1`) y usar
+  `EMULATOR_MEMORY=1024 EMULATOR_CORES=1`.
+- **`10.0.2.2` apunta al contenedor, no al host.** El emulador corre dentro de
+  Docker, así que su gateway es el propio contenedor: el backend tiene que
+  escuchar ahí adentro. `make mock-api` levanta uno falso que además registra
+  cada request.
 - **El emulador se deja matar por OOM.** Con 1536 MB y la stack de Sail
   levantada, el kernel lo mata (`docker inspect` muestra `OOMKilled=true`,
   exit 137). Bajá a `EMULATOR_MEMORY=1024` o paré MySQL mientras lo usás.

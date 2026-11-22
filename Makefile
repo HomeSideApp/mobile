@@ -16,6 +16,7 @@ SERVICE := app
 
 # Emulador headless en un perfil aparte.
 COMPOSE_EMULATOR := $(COMPOSE) --profile emulator
+EMULATOR_CONTAINER := homeside-mobile-emulator-1
 
 # Zona horaria: se toma la del host (Linux/macOS) para que el contenedor no
 # muestre una hora distinta a la del desarrollador. Se puede forzar con
@@ -82,6 +83,11 @@ emulator-up: ## Arranca el emulador headless y espera a que termine el boot
 emulator-status: ## Estado del emulador (boot completado, dispositivo adb)
 > $(COMPOSE_EMULATOR) exec -T emulator sh -c 'adb devices -l; echo "boot_completed=$$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")"'
 
+mock-api: ## Backend falso de HomeSide dentro del emulador (http://10.0.2.2:8080)
+> docker cp docker/mock-api.php $(EMULATOR_CONTAINER):/tmp/mock.php
+> $(COMPOSE_EMULATOR) exec -T -d emulator sh -c 'rm -f /tmp/mock.log; php -S 0.0.0.0:8080 -t /tmp /tmp/mock.php > /tmp/mock.out 2>&1'
+> @echo "mock escuchando en http://10.0.2.2:8080 · log: docker exec $(EMULATOR_CONTAINER) cat /tmp/mock.log"
+
 emulator-logs: ## Logs del emulador en vivo
 > $(COMPOSE_EMULATOR) logs -f emulator
 
@@ -125,4 +131,4 @@ clean: ## Borra contenedor, imagen y volúmenes del proyecto
 clean-sdk: ## Borra el volumen del Android SDK (fuerza reinstalar NDK/CMake en el próximo build)
 > docker volume rm -f homeside-mobile_android-sdk
 
-.PHONY: help build build-php-only up down sh bootstrap install test pint serve jump jump-portable android emulator-build emulator-up emulator-status emulator-logs emulator-down android-emulator plugin-list adb-up adb-pair adb-wifi adb-connect adb-devices clean
+.PHONY: help build build-php-only up down sh bootstrap install test pint serve jump jump-portable android emulator-build emulator-up emulator-status emulator-logs emulator-down android-emulator mock-api plugin-list adb-up adb-pair adb-wifi adb-connect adb-devices clean
