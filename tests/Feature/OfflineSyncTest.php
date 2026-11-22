@@ -238,6 +238,31 @@ class OfflineSyncTest extends TestCase
         );
     }
 
+    public function test_the_cleanup_migration_drops_only_the_legacy_paths(): void
+    {
+        $outbox = app(Outbox::class);
+
+        // Antes de la normalización se guardaba la ruta del cliente HTTP.
+        OutboxEntry::query()->create([
+            'op' => 'put',
+            'path' => '/lists/list-1/items/item-1',
+            'payload' => '{}',
+            'idempotency_key' => 'legacy',
+            'entity' => LocalStore::LIST_ITEMS,
+            'entity_id' => 'item-1',
+            'attempts' => 4,
+            'last_error' => 'route not found',
+            'state' => 'pending',
+            'created_at' => now()->toIso8601String(),
+        ]);
+
+        $outbox->enqueue('put', '/lists/list-1/items/item-2', []);
+
+        (require database_path('migrations/2026_11_22_090000_discard_outbox_entries_with_client_relative_paths.php'))->up();
+
+        $this->assertSame(['/v1/lists/list-1/items/item-2'], OutboxEntry::query()->pluck('path')->all());
+    }
+
     public function test_write_through_enqueues_only_on_transport_failure(): void
     {
         $this->connect();
