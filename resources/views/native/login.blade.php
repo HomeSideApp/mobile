@@ -12,7 +12,14 @@
 
             @if ($step === 'credentials')
 
-                <native:outlined-text-input
+                <native:select
+                :label="__('app.profile.language')"
+                :value="$localeValue"
+                :options="$localeOptions"
+                @change="setLocaleOption"
+            />
+
+            <native:outlined-text-input
                     :label="__('app.login.email')"
                     :placeholder="__('app.login.email_placeholder')"
                     keyboard="email"

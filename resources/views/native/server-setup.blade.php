@@ -10,6 +10,13 @@
                 </native:text>
             </native:column>
 
+            <native:select
+                :label="__('app.profile.language')"
+                :value="$localeValue"
+                :options="$localeOptions"
+                @change="setLocaleOption"
+            />
+
             <native:outlined-text-input
                 :label="__('app.server_setup.server_label')"
                 :placeholder="__('app.server_setup.placeholder')"

@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\NativeComponents\Lists;
+use App\NativeComponents\Login;
 use App\NativeComponents\Profile;
+use App\NativeComponents\ServerSetup;
 use App\Services\Settings\LocaleService;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -148,6 +150,32 @@ class LocaleTest extends TestCase
             ->assertSet('languageNotice', null);
 
         Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/me/profile'));
+        $this->assertSame('en-US', (new LocaleService)->current());
+    }
+
+    public function test_the_language_can_be_chosen_before_signing_in(): void
+    {
+        config(['app.locale' => 'en-US']);
+
+        // La pantalla de conexión y el login se ven sin cuenta, así que el
+        // selector tiene que estar ahí: si no, quien no habla inglés queda con
+        // la app en inglés hasta poder entrar al Perfil.
+        $setup = Native::test(ServerSetup::class, platform: 'android');
+
+        $setup->assertSet('localeValue', 'English')
+            ->assertSet('localeOptions', ['Español', 'English']);
+
+        $setup->call('setLocaleOption', 'Español');
+
+        $setup->assertSet('localeValue', 'Español');
+        $this->assertSame('es-ES', (new LocaleService)->current());
+
+        $login = Native::test(Login::class, platform: 'android');
+
+        $login->assertSet('localeValue', 'Español')
+            ->call('setLocaleOption', 'English')
+            ->assertSet('localeValue', 'English');
+
         $this->assertSame('en-US', (new LocaleService)->current());
     }
 

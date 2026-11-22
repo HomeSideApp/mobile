@@ -48,6 +48,49 @@ final class Login extends NativeComponent
         $this->email = is_array($user) && is_string($user['email'] ?? null)
             ? $user['email']
             : '';
+
+        $this->refreshLocales();
+    }
+
+    /** @var list<string> Etiquetas de idioma, como las muestra el select. */
+    public array $localeOptions = [];
+
+    public string $localeValue = '';
+
+    /**
+     * El select devuelve la etiqueta elegida; acá se vuelve al código.
+     *
+     * Sirve para elegir idioma **antes** de tener cuenta: si no, quien no
+     * habla inglés queda con la app en inglés hasta poder entrar al Perfil.
+     */
+    public function setLocaleOption(?string $label = null): void
+    {
+        $service = new LocaleService;
+        $labels = [];
+
+        foreach ($service->options() as $option) {
+            $labels[$option['code']] = $option['label'];
+        }
+
+        $label = $label ?? $this->localeValue;
+        $code = array_search($label, $labels, true);
+
+        if (is_string($code) && $service->set($code)) {
+            $this->refreshLocales();
+
+            return;
+        }
+
+        $this->localeValue = $labels[$service->current()] ?? '';
+    }
+
+    private function refreshLocales(): void
+    {
+        $service = new LocaleService;
+        $service->apply();
+
+        $this->localeOptions = array_column($service->options(), 'label');
+        $this->localeValue = $service->label($service->current());
     }
 
     public function navTitle(): string
