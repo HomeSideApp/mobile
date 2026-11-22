@@ -45,6 +45,9 @@
                                     <native:text class="text-sm font-semibold text-theme-destructive">
                                         {{ __('app.list_detail.delete_confirm', ['name' => $name]) }}
                                     </native:text>
+                                    @if ($listError)
+                                        <native:text class="text-xs text-theme-destructive">{{ $listError }}</native:text>
+                                    @endif
                                     <native:row class="w-full gap-2">
                                         <native:button :label="__('app.common.cancel')" variant="secondary" class="flex-1" @press="cancelDelete" />
                                         <native:button :label="__('app.list_detail.delete_list')" variant="destructive" class="flex-1" @press="deleteList" />

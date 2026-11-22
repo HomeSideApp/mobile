@@ -171,6 +171,51 @@ class ListDetailOfflineTest extends TestCase
         $this->assertSame(0, app(Outbox::class)->pending());
     }
 
+    public function test_deleting_the_list_without_signal_removes_it_and_queues_the_delete(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+        $this->noSignal();
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        $component->call('requestDelete')->call('deleteList');
+
+        // Se va del espejo al instante: la pantalla no puede seguir mostrando
+        // una lista que el usuario ya confirmó borrar.
+        $this->assertNull(app(LocalStore::class)->find(LocalStore::LISTS, 'list-1'));
+
+        $row = OutboxEntry::query()->firstOrFail();
+
+        $this->assertSame('delete', $row->op);
+        $this->assertSame('/v1/lists/list-1', $row->path);
+        $component->assertSet('listError', null);
+    }
+
+    public function test_a_rejected_delete_says_why_where_the_user_is_looking(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        Http::fake([
+            '*/api/v1/sync/changes*' => Http::response(['data' => [
+                'cursor' => 'c1', 'has_more' => false,
+                'changes' => ['lists' => []], 'deleted' => ['lists' => []],
+            ]]),
+            '*/api/v1/lists/list-1' => Http::response(['message' => 'No podés borrar esta lista.'], 403),
+        ]);
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        $component->call('requestDelete')->call('deleteList');
+
+        // El mensaje va en la hoja: el `error` de la pantalla vive al final del
+        // scroll y desde la confirmación no se veía.
+        $this->assertNotEmpty($component->get('listError'));
+        $this->assertSame(0, app(Outbox::class)->pending(), 'Un rechazo no se encola.');
+        $this->assertNotNull(app(LocalStore::class)->find(LocalStore::LISTS, 'list-1'));
+    }
+
     public function test_the_outbox_always_speaks_the_push_contract(): void
     {
         $outbox = app(Outbox::class);

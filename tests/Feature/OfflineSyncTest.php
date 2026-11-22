@@ -200,6 +200,44 @@ class OfflineSyncTest extends TestCase
         $this->assertTrue(MirrorEntity::query()->where('id', 'viva')->exists());
     }
 
+    public function test_a_failed_push_does_not_block_the_pull(): void
+    {
+        $this->connect();
+
+        // Un pendiente trabado hacía que `run()` cortara antes de bajar cambios.
+        // Resultado: una lista borrada en el servidor seguía en el espejo.
+        app(Outbox::class)->enqueue('put', '/lists/list-1', ['name' => 'x']);
+
+        $calls = 0;
+
+        Http::fake(function () use (&$calls) {
+            $calls++;
+
+            // Primero el push: se cae la conexión.
+            if ($calls === 1) {
+                throw new ConnectionException('sin red');
+            }
+
+            return Http::response($this->page([
+                'changes' => ['lists' => []],
+                'deleted' => ['lists' => ['list-1'], 'list_items' => [], 'economy_transactions' => []],
+            ]));
+        });
+
+        app(LocalStore::class)->put(LocalStore::LISTS, ['id' => 'list-1', 'name' => 'Compra']);
+
+        $result = app(SyncEngine::class)->run();
+
+        $this->assertTrue($result['offline'], 'El push falló, así que seguimos sin red.');
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/sync/changes'));
+
+        $this->assertNull(
+            app(LocalStore::class)->find(LocalStore::LISTS, 'list-1'),
+            'El borrado del servidor tiene que llegar al espejo aunque el push haya fallado.',
+        );
+    }
+
     public function test_write_through_enqueues_only_on_transport_failure(): void
     {
         $this->connect();

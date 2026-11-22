@@ -43,29 +43,26 @@ final class SyncEngine
 
         try {
             $pushed = $this->push();
+            $result['pushed'] = $pushed['applied'];
+            $result['failed'] = $pushed['failed'];
         } catch (HomesideException $exception) {
-            // Sin red: lo pendiente queda en el outbox y la UI sigue con el
-            // espejo. Una sesión vencida **no** es falta de red: mostrarla como
-            // "sin conexión" dejaría al usuario tildando cosas que nunca se van
-            // a sincronizar.
-            return [
-                'pulled' => 0,
-                'pushed' => 0,
-                'pending' => $this->pendingCount(),
-                'failed' => 0,
-                'offline' => ! $exception->requiresLogin(),
-                'needsLogin' => $exception->requiresLogin(),
-            ];
+            // Subir y bajar son independientes: si el push falla, lo pendiente
+            // queda en el outbox y la bajada tiene que correr igual. Cortar acá
+            // dejaba el espejo congelado —una lista borrada en el servidor
+            // seguía apareciendo— por un solo pendiente trabado.
+            //
+            // Una sesión vencida **no** es falta de red: mostrarla como "sin
+            // conexión" dejaría al usuario tildando cosas que nunca se van a
+            // sincronizar.
+            $result['offline'] = ! $exception->requiresLogin();
+            $result['needsLogin'] = $exception->requiresLogin();
         }
-
-        $result['pushed'] = $pushed['applied'];
-        $result['failed'] = $pushed['failed'];
 
         try {
             $result['pulled'] = $this->pull();
         } catch (HomesideException $exception) {
             $result['offline'] = ! $exception->requiresLogin();
-            $result['needsLogin'] = $exception->requiresLogin();
+            $result['needsLogin'] = $result['needsLogin'] || $exception->requiresLogin();
         }
 
         // Tickets capturados sin red: su endpoint no pasa por /sync/push.

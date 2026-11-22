@@ -81,6 +81,9 @@ final class ListDetail extends NativeComponent
 
     public bool $confirmDelete = false;
 
+    /** Error de la hoja de acciones, donde el usuario está mirando. */
+    public ?string $listError = null;
+
     // ── Hoja de detalle ──────────────────────────────────────────────────
     public ?string $openItemId = null;
 
@@ -975,28 +978,55 @@ final class ListDetail extends NativeComponent
 
     public function requestDelete(): void
     {
+        $this->listError = null;
         $this->confirmDelete = true;
     }
 
     public function cancelDelete(): void
     {
+        $this->listError = null;
         $this->confirmDelete = false;
     }
 
     public function deleteList(): void
     {
-        if ($this->listId === null) {
+        if ($this->listId === null || $this->busy) {
             return;
         }
+
+        $this->busy = true;
+        $this->listError = null;
+
+        $base = $this->householdId !== null && $this->householdId !== ''
+            ? '/households/'.$this->householdId.'/lists'
+            : '/lists';
 
         try {
-            (new ListsService)->delete($this->listId, $this->householdId);
+            $applied = app(WriteThrough::class)->run(
+                'delete',
+                $base.'/'.$this->listId,
+                [],
+                fn () => (new ListsService)->delete((string) $this->listId, $this->householdId),
+                LocalStore::LISTS,
+                $this->listId,
+            );
         } catch (HomesideException $exception) {
-            $this->error = $exception->getMessage();
+            // El aviso va en la hoja de acciones: el `error` de la pantalla vive
+            // al final del scroll y desde acá no se veía, así que confirmar el
+            // borrado parecía no hacer nada.
+            $this->busy = false;
+            $this->listError = $exception->getMessage();
 
             return;
         }
 
+        if (! $applied) {
+            // Sin red: se va del espejo ya y la baja queda encolada.
+            app(LocalStore::class)->forget(LocalStore::LISTS, (string) $this->listId);
+            $this->pendingCount = app(Outbox::class)->pending();
+        }
+
+        $this->busy = false;
         $this->back();
     }
 
