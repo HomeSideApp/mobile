@@ -25,6 +25,17 @@ class LocaleTest extends TestCase
         $this->assertSame('es-ES', (new LocaleService)->current());
     }
 
+    public function test_without_a_configured_locale_the_app_starts_in_english(): void
+    {
+        // El APK se construye desde `.env.example`, así que este es el idioma
+        // con el que arranca una instalación nueva: tiene que ser el mismo
+        // default que usa el backend al crear la cuenta.
+        config(['app.locale' => '']);
+
+        $this->assertSame('en-US', (new LocaleService)->defaultLocale());
+        $this->assertSame('en-US', (new LocaleService)->current());
+    }
+
     public function test_choosing_a_locale_persists_and_applies_it(): void
     {
         $service = new LocaleService;
@@ -40,6 +51,8 @@ class LocaleTest extends TestCase
     public function test_an_unsupported_locale_is_rejected(): void
     {
         $service = new LocaleService;
+
+        config(['app.locale' => 'es-ES']);
 
         $this->assertFalse($service->set('fr-FR'));
         $this->assertSame('es-ES', $service->current());

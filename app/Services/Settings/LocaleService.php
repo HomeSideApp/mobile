@@ -42,11 +42,18 @@ final class LocaleService
         return $this->defaultLocale();
     }
 
+    /**
+     * Idioma de arranque: el configurado, o inglés.
+     *
+     * Inglés es el mismo default que el backend (`AppLocale::default()`), así
+     * que una instalación nueva y una cuenta nueva coinciden sin que nadie
+     * tenga que elegir nada.
+     */
     public function defaultLocale(): string
     {
-        $configured = (string) config('app.locale', 'es-ES');
+        $configured = (string) config('app.locale', 'en-US');
 
-        return in_array($configured, self::SUPPORTED, true) ? $configured : 'es-ES';
+        return in_array($configured, self::SUPPORTED, true) ? $configured : 'en-US';
     }
 
     /**

@@ -98,6 +98,6 @@ return [
     |
     */
 
-    'locale' => env('HOMESIDE_LOCALE', 'es-ES'),
+    'locale' => env('HOMESIDE_LOCALE', 'en-US'),
 
 ];

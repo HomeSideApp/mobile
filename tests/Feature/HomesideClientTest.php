@@ -49,7 +49,7 @@ class HomesideClientTest extends TestCase
 
         Http::assertSent(function (Request $request): bool {
             return $request->hasHeader('Authorization', 'Bearer secret-token')
-                && $request->hasHeader('Accept-Language', 'es-ES');
+                && $request->hasHeader('Accept-Language', (string) config('homeside.locale'));
         });
     }
 

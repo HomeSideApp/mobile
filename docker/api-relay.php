@@ -1,4 +1,5 @@
 <?php
+
 // Relay TCP transparente hacia un backend real.
 //
 // El emulador corre dentro de un contenedor, así que para Android `10.0.2.2` es
@@ -31,12 +32,44 @@ while (true) {
         continue;
     }
 
+    // Un proceso por conexión: la app mantiene keep-alive y sin esto la primera
+    // conexión abierta bloquea todas las siguientes (el relay parecería muerto).
+    if (function_exists('pcntl_fork')) {
+        $pid = pcntl_fork();
+
+        if ($pid === -1) {
+            fclose($client);
+
+            continue;
+        }
+
+        if ($pid > 0) {
+            fclose($client);
+
+            continue;
+        }
+
+        // Hijo: atiende **una** conexión y termina. Sin el `exit` vuelve al
+        // `accept` con el socket heredado y el relay se lía.
+        pcntl_signal(SIGCHLD, SIG_IGN);
+        relay($client, $target);
+        exit(0);
+    }
+
+    relay($client, $target);
+}
+
+/**
+ * Bombea bytes en las dos direcciones hasta que una punta cierra.
+ */
+function relay($client, string $target): void
+{
     $upstream = @stream_socket_client('tcp://'.$target, $errno, $errstr, 5);
 
     if ($upstream === false) {
         fclose($client);
 
-        continue;
+        return;
     }
 
     foreach ([$client, $upstream] as $socket) {
