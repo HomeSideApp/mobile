@@ -56,6 +56,9 @@ final class SyncEngine
             // sincronizar.
             $result['offline'] = ! $exception->requiresLogin();
             $result['needsLogin'] = $exception->requiresLogin();
+            // Un rechazo del servidor no es falta de red: la pantalla tiene que
+            // poder decir por qué en vez de mostrar el espejo como si nada.
+            $result['pushError'] = $result['offline'] ? null : $exception->getMessage();
         }
 
         try {
@@ -155,8 +158,11 @@ final class SyncEngine
                 break;
             }
 
+            // `op_id` tiene que ser un UUID (el endpoint lo valida así), y el
+            // id numérico de la fila no lo es: el lote entero volvía 422 y el
+            // motor lo interpretaba como falta de red, sin decir nada.
             $operations = $entries->map(fn (OutboxEntry $entry): array => [
-                'op_id' => (string) $entry->id,
+                'op_id' => (string) $entry->idempotency_key,
                 'method' => strtoupper((string) $entry->op),
                 'path' => (string) $entry->path,
                 'body' => $entry->body(),
@@ -171,7 +177,9 @@ final class SyncEngine
             $results = is_array($payload['results'] ?? null) ? $payload['results'] : [];
 
             foreach ($results as $result) {
-                $entry = $entries->firstWhere('id', (int) ($result['op_id'] ?? 0));
+                $entry = $entries->first(
+                    fn (OutboxEntry $candidate): bool => (string) $candidate->idempotency_key === (string) ($result['op_id'] ?? ''),
+                );
 
                 if (! $entry instanceof OutboxEntry) {
                     continue;

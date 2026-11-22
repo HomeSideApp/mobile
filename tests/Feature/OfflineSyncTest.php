@@ -14,6 +14,7 @@ use App\Services\Offline\WriteThrough;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\Concerns\InteractsWithHomeside;
 use Tests\TestCase;
 
@@ -106,14 +107,28 @@ class OfflineSyncTest extends TestCase
         $first = $outbox->enqueue('put', '/lists/list-1/items/item-1', ['is_checked' => true], LocalStore::LIST_ITEMS, 'item-1');
         $second = $outbox->enqueue('delete', '/lists/list-1/items/item-2', [], LocalStore::LIST_ITEMS, 'item-2');
 
+        // El endpoint valida `op_id` como UUID: el id numérico de la fila no
+        // sirve y el lote entero vuelve 422.
         Http::fake(['*/api/v1/sync/push' => Http::response(['data' => ['results' => [
-            ['op_id' => (string) $first->id, 'status' => 'applied', 'status_code' => 200, 'body' => [
+            ['op_id' => $first->idempotency_key, 'status' => 'applied', 'status_code' => 200, 'body' => [
                 'data' => ['id' => 'item-1', 'list_id' => 'list-1', 'is_checked' => true],
             ]],
-            ['op_id' => (string) $second->id, 'status' => 'applied', 'status_code' => 204, 'body' => []],
+            ['op_id' => $second->idempotency_key, 'status' => 'applied', 'status_code' => 204, 'body' => []],
         ]]])]);
 
         $result = app(SyncEngine::class)->push();
+
+        Http::assertSent(function ($request): bool {
+            $operations = $request['operations'] ?? [];
+
+            foreach ($operations as $operation) {
+                if (! Str::isUuid((string) ($operation['op_id'] ?? ''))) {
+                    return false;
+                }
+            }
+
+            return count($operations) === 2;
+        });
 
         $this->assertSame(2, $result['applied']);
         $this->assertSame(0, OutboxEntry::query()->count());
@@ -129,7 +144,7 @@ class OfflineSyncTest extends TestCase
         $entry = app(Outbox::class)->enqueue('put', '/lists/l/items/i', ['is_checked' => true], LocalStore::LIST_ITEMS, 'i');
 
         Http::fake(['*/api/v1/sync/push' => Http::response(['data' => ['results' => [
-            ['op_id' => (string) $entry->id, 'status' => 'rejected', 'status_code' => 422, 'body' => ['message' => 'no']],
+            ['op_id' => $entry->idempotency_key, 'status' => 'rejected', 'status_code' => 422, 'body' => ['message' => 'no']],
         ]]])]);
 
         app(SyncEngine::class)->push();
