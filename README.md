@@ -69,9 +69,11 @@ Dos trampas que cuestan una tarde cada una:
   (`docker stop homeside-laravel.test-1 homeside-mysql-1`) y usar
   `EMULATOR_MEMORY=1024 EMULATOR_CORES=1`.
 - **`10.0.2.2` apunta al contenedor, no al host.** El emulador corre dentro de
-  Docker, así que su gateway es el propio contenedor: el backend tiene que
-  escuchar ahí adentro. `make mock-api` levanta uno falso que además registra
-  cada request.
+  Docker, así que para Android su gateway es el propio contenedor, y ese
+  contenedor vive en `homeside-mobile_default`, no en la red de Sail. Para
+  probar contra el **backend real** (nada de mocks, nada de divergencia):
+  `make api-relay` conecta el contenedor a `homeside_sail` y expone
+  `laravel.test:80` en `http://10.0.2.2:8080` con un relay TCP.
 - **El emulador se deja matar por OOM.** Con 1536 MB y la stack de Sail
   levantada, el kernel lo mata (`docker inspect` muestra `OOMKilled=true`,
   exit 137). Bajá a `EMULATOR_MEMORY=1024` o paré MySQL mientras lo usás.
