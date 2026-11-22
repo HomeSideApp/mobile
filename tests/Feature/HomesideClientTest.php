@@ -68,6 +68,38 @@ class HomesideClientTest extends TestCase
         });
     }
 
+    public function test_every_mutating_verb_carries_an_idempotency_key(): void
+    {
+        // El backend empezó a exigirla el 18/11 en TODAS las rutas de escritura
+        // del alcance offline (`b14ed6e`). PUT y DELETE no la mandaban, así que
+        // tildar un ítem, renombrar o borrar una lista respondían 422 con
+        // `idempotency_key_required` — y la pantalla lo mostraba como "no pasa
+        // nada".
+        Http::fake([
+            'homeside.cloud/api/v1/*' => Http::response(['data' => []], 200),
+        ]);
+
+        $client = $this->client('secret-token');
+
+        $client->put('/lists/l1', ['name' => 'Otra']);
+        $client->patch('/lists/l1', ['name' => 'Otra']);
+        $client->delete('/lists/l1');
+        $client->uploadFile('/lists/l1/items/i1', 'image_url', 'bytes', 'foto.jpg');
+
+        $verbs = [];
+
+        foreach (Http::recorded() as [$request]) {
+            $verbs[$request->method()] = $request->header('Idempotency-Key');
+        }
+
+        $this->assertSame(['PUT', 'PATCH', 'DELETE', 'POST'], array_keys($verbs));
+
+        foreach ($verbs as $method => $key) {
+            $this->assertIsArray($key, "{$method} sin Idempotency-Key.");
+            $this->assertSame(36, strlen((string) ($key[0] ?? '')), "{$method} con una clave mal formada.");
+        }
+    }
+
     public function test_a_network_failure_becomes_a_retryable_network_error(): void
     {
         Http::fake(fn () => throw new ConnectionException('cURL error 28: Operation timed out'));

@@ -75,18 +75,18 @@ final class HomesideClient
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function put(string $path, array $payload = []): array
+    public function put(string $path, array $payload = [], ?string $idempotencyKey = null): array
     {
-        return $this->send('PUT', $path, payload: $payload);
+        return $this->send('PUT', $path, payload: $payload, idempotencyKey: $idempotencyKey ?? self::newIdempotencyKey());
     }
 
     /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function patch(string $path, array $payload = []): array
+    public function patch(string $path, array $payload = [], ?string $idempotencyKey = null): array
     {
-        return $this->send('PATCH', $path, payload: $payload);
+        return $this->send('PATCH', $path, payload: $payload, idempotencyKey: $idempotencyKey ?? self::newIdempotencyKey());
     }
 
     /**
@@ -112,14 +112,23 @@ final class HomesideClient
      * `$extra` puede llevar arrays anidados (`sections[place]`) y se envía tal
      * cual: el servidor espera esos campos, no un único payload JSON.
      */
-    public function uploadFile(string $path, string $field, string $contents, string $filename, array $extra = []): array
-    {
+    public function uploadFile(
+        string $path,
+        string $field,
+        string $contents,
+        string $filename,
+        array $extra = [],
+        ?string $idempotencyKey = null,
+    ): array {
         $url = $this->server->apiBase.'/'.ltrim($path, '/');
 
         $request = Http::baseUrl($this->server->apiBase)
             ->acceptJson()
             ->timeout((int) config('homeside.timeout', 15))
-            ->withHeaders(['Accept-Language' => (string) config('homeside.locale', 'es-ES')])
+            ->withHeaders([
+                'Accept-Language' => (string) config('homeside.locale', 'es-ES'),
+                'Idempotency-Key' => $idempotencyKey ?? self::newIdempotencyKey(),
+            ])
             ->attach($field, $contents, $filename);
 
         if ($this->token !== null && $this->token !== '') {
@@ -171,9 +180,9 @@ final class HomesideClient
     /**
      * @return array<string, mixed>
      */
-    public function delete(string $path): array
+    public function delete(string $path, ?string $idempotencyKey = null): array
     {
-        return $this->send('DELETE', $path);
+        return $this->send('DELETE', $path, idempotencyKey: $idempotencyKey ?? self::newIdempotencyKey());
     }
 
     /**
