@@ -173,14 +173,22 @@ final class Lists extends NativeComponent
             $store = app(LocalStore::class);
             $households = app(HouseholdsService::class);
 
-            $this->households = $store->all(LocalStore::HOUSEHOLDS);
+            // El selector de hogares es accesorio para esta pantalla. Antes, sin
+            // red, `all()` lanzaba y el `catch` general cortaba la carga antes
+            // de leer el espejo: la lista existía en el teléfono y la pantalla
+            // igual decía "todavía no hay listas".
+            try {
+                $this->households = $store->all(LocalStore::HOUSEHOLDS);
 
-            if ($this->households === []) {
-                $this->households = $households->all();
+                if ($this->households === []) {
+                    $this->households = $households->all();
+                }
+
+                $this->activeHouseholdId = $households->activeId();
+                $this->activeHouseholdName = $households->name($this->activeHouseholdId);
+            } catch (HomesideException $exception) {
+                $this->needsLogin = $this->needsLogin || $exception->requiresLogin();
             }
-
-            $this->activeHouseholdId = $households->activeId();
-            $this->activeHouseholdName = $households->name($this->activeHouseholdId);
 
             $all = $store->all(LocalStore::LISTS);
 

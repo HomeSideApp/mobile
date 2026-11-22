@@ -171,6 +171,43 @@ class ListDetailOfflineTest extends TestCase
         $this->assertSame(0, app(Outbox::class)->pending());
     }
 
+    public function test_checking_an_item_without_signal_shows_it_and_queues_one_write(): void
+    {
+        $this->connect();
+        $this->seedMirror();
+        $this->noSignal();
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        $component->call('toggle', 'item-1');
+
+        // Se ve ya: el espejo quedó tildado, así que el ítem sale de pendientes.
+        $this->assertTrue((bool) (app(LocalStore::class)->find(LocalStore::LIST_ITEMS, 'item-1')['is_checked'] ?? false));
+        $this->assertSame([], $component->get('pending'));
+
+        // Y queda una sola operación, con la versión del servidor intacta para
+        // que el push pueda detectar escrituras viejas.
+        $rows = OutboxEntry::query()->get();
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('/v1/lists/list-1/items/item-1', $rows[0]->path);
+        $this->assertSame('2026-11-20T10:00:00Z', $rows[0]->body()['updated_at'] ?? null);
+    }
+
+    public function test_toggling_the_same_item_twice_offline_leaves_one_operation(): void
+    {
+        $this->connect();
+        $this->seedMirror();
+        $this->noSignal();
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        $component->call('toggle', 'item-1');
+        $component->call('toggle', 'item-1');
+
+        $this->assertSame(1, app(Outbox::class)->pending(), 'Dos toques no pueden encolar dos escrituras.');
+    }
+
     public function test_deleting_the_list_without_signal_removes_it_and_queues_the_delete(): void
     {
         $this->connect();

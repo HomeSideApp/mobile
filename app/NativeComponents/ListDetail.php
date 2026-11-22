@@ -484,7 +484,18 @@ final class ListDetail extends NativeComponent
         }
 
         if (! $applied) {
-            // Sin red: se refleja en el espejo y queda en el outbox.
+            // Sin red: se refleja en el espejo **ya**, si no la pantalla no
+            // cambia y parece que el toque no hizo nada. El `updated_at` se
+            // deja como estaba a propósito: es la versión del servidor sobre la
+            // que se basa esta edición, y el push la manda para detectar
+            // escrituras viejas.
+            $store = app(LocalStore::class);
+            $cached = $store->find(LocalStore::LIST_ITEMS, $itemId);
+
+            if ($cached !== null) {
+                $store->put(LocalStore::LIST_ITEMS, [...$cached, 'is_checked' => $checked]);
+            }
+
             $this->pendingCount = app(Outbox::class)->pending();
             $this->offline = true;
         }
@@ -1085,6 +1096,10 @@ final class ListDetail extends NativeComponent
                 : (is_string($category['id'] ?? null) ? $category['id'] : null),
             'icon' => $icon,
             'checked' => $checked,
+            // La versión del servidor viaja en el cuerpo del PUT: sin ella la
+            // API no puede responder `stale_write` cuando el ítem cambió en otro
+            // dispositivo mientras estábamos sin red.
+            'updated_at' => is_string($item['updated_at'] ?? null) ? $item['updated_at'] : null,
             'color' => $cardColor,
             'color_text' => CardColor::foreground($cardColor),
         ];

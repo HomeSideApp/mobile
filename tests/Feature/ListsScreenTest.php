@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\NativeComponents\Lists;
 use App\Services\Homeside\AppUpdateChecker;
+use App\Services\Offline\LocalStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Native\Mobile\Testing\Native;
 use Tests\Concerns\InteractsWithHomeside;
@@ -49,6 +51,28 @@ class ListsScreenTest extends TestCase
             ->assertSee('Compra semanal')
             ->assertSee('Limpieza')
             ->assertSee('Casa de Ana');
+    }
+
+    public function test_without_signal_the_lists_come_from_the_mirror(): void
+    {
+        $this->connect();
+
+        // El espejo tiene la lista; el selector de hogares (accesorio) falla sin
+        // red. Antes ese fallo cortaba la carga y la pantalla decía "todavía no
+        // hay listas" aunque el dato estuviera en el teléfono.
+        app(LocalStore::class)->put(LocalStore::LISTS, [
+            'id' => 'list-1',
+            'name' => 'Compra offline',
+            'household_id' => null,
+            'updated_at' => '2026-11-20T10:00:00Z',
+        ]);
+
+        Http::fake(fn () => throw new ConnectionException('sin red'));
+
+        $component = Native::test(Lists::class, platform: 'android');
+
+        $this->assertSame('Compra offline', $component->get('personal')[0]['name'] ?? null);
+        $component->assertSet('error', null)->assertSet('offline', true)->assertSee('Compra offline');
     }
 
     public function test_it_warns_when_the_session_expired(): void

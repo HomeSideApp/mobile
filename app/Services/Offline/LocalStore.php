@@ -31,7 +31,11 @@ final class LocalStore
             return;
         }
 
-        MirrorEntity::query()->updateOrCreate(
+        // Por el query builder, no por Eloquent: el modelo no tiene clave
+        // primaria simple (la identidad es `entity`+`id`) y `save()` con
+        // `$primaryKey = null` termina actualizando **todas** las filas de la
+        // tabla. Así, tildar un ítem tildaba la lista entera.
+        MirrorEntity::query()->updateOrInsert(
             ['entity' => $entity, 'id' => $id],
             [
                 'payload' => json_encode($payload),

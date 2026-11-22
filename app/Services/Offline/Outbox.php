@@ -24,6 +24,28 @@ final class Outbox
         ?string $entity = null,
         ?string $entityId = null,
     ): OutboxEntry {
+        // Mismo recurso, misma operación, todavía sin enviar: el toque nuevo
+        // reemplaza al anterior. Sin esto un ítem tildado y destildado offline
+        // encolaba dos PUT que después competían entre sí en el push.
+        if ($entity !== null && $entityId !== null) {
+            $pending = OutboxEntry::query()
+                ->where('entity', $entity)
+                ->where('entity_id', $entityId)
+                ->where('op', strtolower($op))
+                ->where('state', 'pending')
+                ->where('attempts', 0)
+                ->first();
+
+            if ($pending !== null) {
+                $pending->update([
+                    'payload' => json_encode($payload),
+                    'created_at' => now()->toIso8601String(),
+                ]);
+
+                return $pending;
+            }
+        }
+
         return OutboxEntry::query()->create([
             'op' => strtolower($op),
             'path' => $this->apiPath($path),
