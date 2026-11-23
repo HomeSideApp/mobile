@@ -12,6 +12,10 @@ use App\NativeComponents\ListDetail;
 use App\NativeComponents\Lists;
 use App\NativeComponents\Login;
 use App\NativeComponents\Profile;
+use App\NativeComponents\RecipeCook;
+use App\NativeComponents\RecipeDetail;
+use App\NativeComponents\RecipeForm;
+use App\NativeComponents\RecipeImport;
 use App\NativeComponents\Recipes;
 use App\NativeComponents\ServerSetup;
 use App\NativeComponents\Start;
@@ -45,6 +49,11 @@ Route::middleware(ApplyAppearance::class)->group(function (): void {
     Route::nativeGroup(AppTabsLayout::class, function (): void {
         Route::native('/lists', Lists::class)->name('lists');
         Route::native('/recipes', Recipes::class)->name('recipes');
+        Route::native('/recipes/create', RecipeForm::class)->name('recipes.create');
+        Route::native('/recipes/import', RecipeImport::class)->name('recipes.import');
+        Route::native('/recipes/{recipe}', RecipeDetail::class)->name('recipes.show');
+        Route::native('/recipes/{recipe}/edit', RecipeForm::class)->name('recipes.edit');
+        Route::native('/recipes/{recipe}/cook', RecipeCook::class)->name('recipes.cook');
         Route::native('/expenses', Expenses::class)->name('expenses');
         Route::native('/house', House::class)->name('house');
         Route::native('/profile', Profile::class)->name('profile');
