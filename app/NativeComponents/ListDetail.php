@@ -674,38 +674,48 @@ final class ListDetail extends NativeComponent
     {
         $store = app(LocalStore::class);
 
-        try {
-            $products = (new CatalogService)->search('', $categoryId, 60);
+        $cached = array_values(array_filter(
+            $store->all(LocalStore::PRODUCTS),
+            fn (array $product): bool => ($product['category']['id'] ?? null) === $categoryId
+                || ($product['category_id'] ?? null) === $categoryId,
+        ));
 
-            foreach ($products as $product) {
-                if (is_array($product)) {
-                    $store->put(LocalStore::PRODUCTS, $product);
-                }
-            }
-        } catch (HomesideException $exception) {
-            // Sin red se cae al catálogo guardado y se filtra por categoría: el
-            // usuario no tiene por qué quedarse sin productos.
-            $products = array_values(array_filter(
-                $store->all(LocalStore::PRODUCTS),
-                fn (array $product): bool => ($product['category']['id'] ?? null) === $categoryId
-                    || ($product['category_id'] ?? null) === $categoryId,
-            ));
+        // Sin red conocida y con productos guardados se responde al instante: el
+        // timeout del cliente son 15 s de spinner para mostrar lo que ya está en
+        // el teléfono. Si no hay nada guardado, se intenta igual por si la
+        // conexión volvió antes de que el motor la detecte.
+        if ($this->offline && $cached !== []) {
+            $products = $cached;
+        } else {
+            try {
+                $products = (new CatalogService)->search('', $categoryId, 60);
 
-            if ($products === []) {
-                // Sin catálogo guardado para esta categoría no hay nada que
-                // mostrar, pero el spinner no puede quedarse girando: se marca
-                // como cargada (vacía) y se avisa.
-                $this->error = __('app.list_detail.category_offline_empty');
-
-                foreach ($this->categories as $index => $category) {
-                    if ($category['id'] === $categoryId) {
-                        $this->categories[$index]['loaded'] = true;
-
-                        break;
+                foreach ($products as $product) {
+                    if (is_array($product)) {
+                        $store->put(LocalStore::PRODUCTS, $product);
                     }
                 }
+            } catch (HomesideException $exception) {
+                // Sin red se cae al catálogo guardado: el usuario no tiene por qué
+                // quedarse sin productos.
+                $products = $cached;
 
-                return;
+                if ($products === []) {
+                    // Sin catálogo guardado no hay nada que mostrar, pero el
+                    // spinner no puede quedarse girando: se marca como cargada
+                    // (vacía) y se avisa.
+                    $this->error = __('app.list_detail.category_offline_empty');
+
+                    foreach ($this->categories as $index => $category) {
+                        if ($category['id'] === $categoryId) {
+                            $this->categories[$index]['loaded'] = true;
+
+                            break;
+                        }
+                    }
+
+                    return;
+                }
             }
         }
 

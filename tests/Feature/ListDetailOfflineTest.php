@@ -532,6 +532,39 @@ class ListDetailOfflineTest extends TestCase
         $this->assertNotNull($component->get('error'), 'Tiene que explicar por qué está vacía.');
     }
 
+    public function test_opening_a_saved_category_offline_does_not_wait_for_the_network(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        app(LocalStore::class)->put(LocalStore::CATEGORIES, ['id' => 'cat-1', 'name' => 'Lácteos']);
+        app(LocalStore::class)->put(LocalStore::PRODUCTS, [
+            'id' => 'p-1',
+            'name' => 'Leche',
+            'category' => ['id' => 'cat-1', 'name' => 'Lácteos'],
+        ]);
+
+        $requests = 0;
+
+        Http::fake(function () use (&$requests) {
+            $requests++;
+
+            throw new ConnectionException('sin red');
+        });
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        // El motor ya marcó la pantalla como sin red.
+        $component->assertSet('offline', true);
+
+        $before = $requests;
+        $component->call('toggleCategory', 'cat-1');
+
+        $this->assertSame($before, $requests, 'Con productos guardados no hay que intentar la red: son 15 s de espera.');
+        $this->assertSame('Leche', $component->get('categories')[0]['products'][0]['name'] ?? null);
+        $component->assertSet('categories.0.loaded', true);
+    }
+
     public function test_the_outbox_always_speaks_the_push_contract(): void
     {
         $outbox = app(Outbox::class);
