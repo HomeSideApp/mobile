@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Homeside\HouseholdsService;
 use App\Services\Settings\AppearanceService;
 use App\Services\Settings\LocaleService;
+use App\Services\Storage\EnsureDatabase;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Antes que nada: si el archivo de SQLite no está, nada de lo que sigue
+        // puede leer ajustes. Lo recrea y migra.
+        (new EnsureDatabase)->run();
+
         // Best effort: en un arranque frío la tabla `settings` puede no existir
         // todavía; `apply()` lo resuelve con el idioma por defecto.
         (new LocaleService)->apply();
