@@ -13,7 +13,7 @@
         "nativephp/mobile": "^4.7",
         "nativephp/mobile-camera": "^1.1",
         "nativephp/mobile-share": "^1.1",
-        "nativephp/mobile-ui": "^0.9"
+        "nativephp/mobile-ui": "^0.10"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
