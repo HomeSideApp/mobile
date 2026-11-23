@@ -265,6 +265,8 @@ return [
         'no_store' => 'Sin local',
         'change_icon' => 'Cambiar ícono',
         'icon_search' => 'Buscar ícono…',
+        'category_offline_empty' => 'Esta categoría todavía no se descargó. Conectate una vez para tenerla sin red.',
+        'category_empty' => 'No hay productos en esta categoría.',
     ],
 
     'picker' => [
@@ -311,6 +313,11 @@ return [
         'footer' => 'HomeSide :version · la administración se gestiona desde la web',
         'language_changed' => 'Idioma actualizado.',
         'language_failed' => 'Cambiamos el idioma en este dispositivo, pero no pudimos guardarlo en tu cuenta.',
+    ],
+
+    'offline' => [
+        'offline' => 'Sin conexión. Estás viendo lo que ya se descargó.',
+        'pending' => '{1} Sin conexión · 1 cambio sin subir|[2,*] Sin conexión · :count cambios sin subir',
     ],
 
     'updates' => [

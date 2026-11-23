@@ -27,6 +27,7 @@ final class SyncEngine
         private readonly SyncState $state = new SyncState,
         private readonly Session $session = new Session,
         private readonly PendingImports $imports = new PendingImports,
+        private readonly CatalogSync $catalog = new CatalogSync,
     ) {}
 
     /**
@@ -66,6 +67,18 @@ final class SyncEngine
         } catch (HomesideException $exception) {
             $result['offline'] = ! $exception->requiresLogin();
             $result['needsLogin'] = $result['needsLogin'] || $exception->requiresLogin();
+        }
+
+        // El delta no trae catálogo: sin esto, sin red no hay productos que
+        // agregar salvo los que se hayan abierto a mano.
+        if (! $result['offline']) {
+            try {
+                if ($this->catalog->refresh()) {
+                    $result['catalog'] = true;
+                }
+            } catch (HomesideException) {
+                // Lo que había sigue sirviendo.
+            }
         }
 
         // Filas optimistas que el servidor ya confirmó: se retiran solas.

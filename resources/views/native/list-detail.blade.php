@@ -10,6 +10,17 @@
                 </native:column>
             @else
 
+                @if ($offline || $pendingCount > 0)
+                    {{-- El usuario tiene que saber que está sin red y que hay cambios
+                         esperando: si no, el tilde parece no haberse guardado. --}}
+                    <native:row class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant px-3 py-2">
+                        <native:icon ios="arrow.triangle.2.circlepath" android="sync_problem" :size="16" class="text-theme-on-surface-variant" />
+                        <native:text class="flex-1 text-xs text-theme-on-surface-variant">
+                                {{ $pendingCount > 0 ? __('app.offline.pending', ['count' => $pendingCount]) : __('app.offline.offline') }}
+                        </native:text>
+                    </native:row>
+                @endif
+
                 {{-- ── Acciones de la lista ─────────────────────────── --}}
                 <native:row class="w-full items-center gap-2">
                     <native:pressable class="rounded-lg bg-theme-surface px-3 py-2" @press="toggleListActions">
@@ -264,10 +275,16 @@
                             </native:pressable>
 
                             @if ($category['open'])
-                                @if (count($category['products']) === 0)
+                                @if (count($category['products']) === 0 && ! $category['loaded'])
+                                    {{-- Spinner sólo mientras de verdad está cargando: una
+                                         categoría vacía es un estado final. --}}
                                     <native:row class="w-full items-center justify-center gap-2 p-4">
                                         <native:activity-indicator />
                                         <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.common.loading') }}</native:text>
+                                    </native:row>
+                                @elseif (count($category['products']) === 0)
+                                    <native:row class="w-full items-center justify-center p-4">
+                                        <native:text class="text-center text-xs text-theme-on-surface-variant">{{ __('app.list_detail.category_empty') }}</native:text>
                                     </native:row>
                                 @else
                                     <native:column class="w-full gap-2 rounded-b-xl p-2 bg-[{{ $category['tint'] }}]">

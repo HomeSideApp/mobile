@@ -2,6 +2,17 @@
     <native:scroll-view class="w-full flex-1">
         <native:column class="w-full gap-4 p-4">
 
+            @if ($offline || $pendingCount > 0)
+                {{-- El usuario tiene que saber que está sin red y que hay cambios
+                     esperando: si no, el tilde parece no haberse guardado. --}}
+                <native:row class="w-full items-center gap-2 rounded-lg bg-theme-surface-variant px-3 py-2">
+                    <native:icon ios="arrow.triangle.2.circlepath" android="sync_problem" :size="16" class="text-theme-on-surface-variant" />
+                    <native:text class="flex-1 text-xs text-theme-on-surface-variant">
+                        {{ $pendingCount > 0 ? __('app.offline.pending', ['count' => $pendingCount]) : __('app.offline.offline') }}
+                    </native:text>
+                </native:row>
+            @endif
+
             @if ($needsLogin)
                 <native:column class="w-full items-center gap-3 rounded-lg bg-theme-surface-variant px-4 py-10">
                     <native:icon ios="lock.fill" android="lock" :size="28" class="text-theme-primary" />

@@ -509,6 +509,29 @@ class ListDetailOfflineTest extends TestCase
         $this->assertSame(0, $entry->fresh()->attempts);
     }
 
+    public function test_an_empty_category_offline_finishes_loading_instead_of_spinning(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        // Categoría conocida, pero sin productos guardados.
+        app(LocalStore::class)->put(LocalStore::CATEGORIES, [
+            'id' => 'cat-1',
+            'name' => 'Lácteos',
+        ]);
+
+        $this->noSignal();
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $component->call('toggleCategory', 'cat-1');
+
+        // `loaded` es lo que la vista mira para dejar de girar: la categoría
+        // vacía es un estado final, no una carga en curso.
+        $component->assertSet('categories.0.loaded', true);
+        $this->assertSame([], $component->get('categories')[0]['products']);
+        $this->assertNotNull($component->get('error'), 'Tiene que explicar por qué está vacía.');
+    }
+
     public function test_the_outbox_always_speaks_the_push_contract(): void
     {
         $outbox = app(Outbox::class);

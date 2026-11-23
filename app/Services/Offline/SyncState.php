@@ -11,7 +11,24 @@ final class SyncState
 {
     public const string CURSOR = 'sync.cursor';
 
+    private const string CATALOG_AT = 'sync.catalog_at';
+
     public const string LAST_SYNC = 'sync.last_at';
+
+    /**
+     * Cuándo se bajó el catálogo por última vez.
+     */
+    public function catalogSyncedAt(): ?string
+    {
+        $value = $this->get(self::CATALOG_AT);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    public function setCatalogSyncedAt(string $moment): void
+    {
+        $this->put(self::CATALOG_AT, $moment);
+    }
 
     public function cursor(): ?string
     {

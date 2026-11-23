@@ -263,6 +263,8 @@ return [
         'no_store' => 'No store',
         'change_icon' => 'Change icon',
         'icon_search' => 'Search an icon…',
+        'category_offline_empty' => 'This category has not been downloaded yet. Connect once to have it offline.',
+        'category_empty' => 'There are no products in this category.',
     ],
 
     'picker' => [
@@ -309,6 +311,11 @@ return [
         'footer' => 'HomeSide :version · admin lives on the web',
         'language_changed' => 'Language updated.',
         'language_failed' => 'We changed the language on this device but could not save it to your account.',
+    ],
+
+    'offline' => [
+        'offline' => 'No connection. You are seeing what was already downloaded.',
+        'pending' => '{1} No connection · 1 unsent change|[2,*] No connection · :count unsent changes',
     ],
 
     'updates' => [

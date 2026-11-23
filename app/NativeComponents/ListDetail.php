@@ -240,10 +240,6 @@ final class ListDetail extends NativeComponent
         $store = app(LocalStore::class);
 
         try {
-            // Se mira **antes** de escribir: los recientes también van a la
-            // bolsa del catálogo y taparían la condición del prefetch.
-            $hadCatalog = $store->all(LocalStore::PRODUCTS) !== [];
-
             $categories = $catalog->categories();
             $recent = $catalog->recent(24, $this->householdId);
 
@@ -262,22 +258,6 @@ final class ListDetail extends NativeComponent
                 }
             }
 
-            // Una sola request para tener el catálogo completo guardado: así las
-            // categorías se pueden abrir sin red sin haberlas abierto antes.
-            // Sólo cuando el espejo todavía no tiene nada, para no pedir 200
-            // productos en cada apertura de lista.
-            if (! $hadCatalog) {
-                try {
-                    foreach ($catalog->search('', null, 200) as $product) {
-                        if (is_array($product)) {
-                            $store->put(LocalStore::PRODUCTS, $product);
-                        }
-                    }
-                } catch (HomesideException) {
-                    // Guardar el catálogo es una optimización: si falla, la
-                    // pantalla sigue con las categorías y los recientes.
-                }
-            }
         } catch (HomesideException $exception) {
             $this->needsLogin = $this->needsLogin || $exception->requiresLogin();
 
@@ -712,7 +692,18 @@ final class ListDetail extends NativeComponent
             ));
 
             if ($products === []) {
-                $this->error = $exception->getMessage();
+                // Sin catálogo guardado para esta categoría no hay nada que
+                // mostrar, pero el spinner no puede quedarse girando: se marca
+                // como cargada (vacía) y se avisa.
+                $this->error = __('app.list_detail.category_offline_empty');
+
+                foreach ($this->categories as $index => $category) {
+                    if ($category['id'] === $categoryId) {
+                        $this->categories[$index]['loaded'] = true;
+
+                        break;
+                    }
+                }
 
                 return;
             }
