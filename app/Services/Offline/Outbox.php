@@ -79,6 +79,48 @@ final class Outbox
             : '/v1'.$path;
     }
 
+    /**
+     * Ids de las filas cuya última operación quedó rechazada.
+     *
+     * Un rechazo no se reintenta solo, pero la pantalla tiene que poder decirlo.
+     *
+     * @return list<string>
+     */
+    public function failedIds(string $entity): array
+    {
+        return OutboxEntry::query()
+            ->where('entity', $entity)
+            ->where('state', 'failed')
+            ->pluck('entity_id')
+            ->filter(fn (mixed $id): bool => is_string($id) && $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Vuelve a poner en cola las operaciones rechazadas de esas filas.
+     *
+     * @param  list<string>  $entityIds
+     * @return int cuántas se reintentaron
+     */
+    public function retry(string $entity, array $entityIds): int
+    {
+        if ($entityIds === []) {
+            return 0;
+        }
+
+        return OutboxEntry::query()
+            ->where('entity', $entity)
+            ->whereIn('entity_id', $entityIds)
+            ->where('state', 'failed')
+            ->update([
+                'state' => 'pending',
+                'attempts' => 0,
+                'last_error' => null,
+            ]);
+    }
+
     public function pending(): int
     {
         return OutboxEntry::query()->where('state', 'pending')->count();

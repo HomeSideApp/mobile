@@ -135,6 +135,9 @@ final class ListDetail extends NativeComponent
 
     public bool $offline = false;
 
+    /** @var list<string> Ítems cuya última escritura fue rechazada por el servidor. */
+    public array $failedItemIds = [];
+
     public int $pendingCount = 0;
 
     /** idle | uploading | done | failed */
@@ -189,6 +192,8 @@ final class ListDetail extends NativeComponent
         $this->pendingCount = $result['pending'];
         $this->offline = $result['offline'];
         $this->needsLogin = $this->needsLogin || (bool) ($result['needsLogin'] ?? false);
+
+        $this->failedItemIds = app(Outbox::class)->failedIds(LocalStore::LIST_ITEMS);
 
         $store = app(LocalStore::class);
         $list = $store->find(LocalStore::LISTS, $this->listId);
@@ -456,6 +461,10 @@ final class ListDetail extends NativeComponent
         $product = ['name' => trim($this->search)];
         $item = ['quantity' => 1];
 
+        // Id de la fila optimista: el vínculo con la operación encolada, para
+        // poder decir en la tarjeta si el servidor la rechazó.
+        $pendingId = 'pending-'.Str::uuid()->toString();
+
         try {
             // `quick-create` no acepta id de cliente (crea el producto y el ítem
             // juntos), así que sin red no hay fila optimista: el ítem aparece
@@ -472,7 +481,7 @@ final class ListDetail extends NativeComponent
                     return $created;
                 },
                 LocalStore::LIST_ITEMS,
-                null,
+                $pendingId,
             );
 
             // El servidor puede haber reutilizado un producto que ya existía:
@@ -492,7 +501,7 @@ final class ListDetail extends NativeComponent
             // producto nace en el servidor, así que es una fila local que se
             // retira sola cuando el servidor devuelve la definitiva.
             app(LocalStore::class)->put(LocalStore::LIST_ITEMS, [
-                'id' => 'pending-'.Str::uuid()->toString(),
+                'id' => $pendingId,
                 'list_id' => $this->listId,
                 'product_id' => null,
                 'custom_name' => $product['name'],
@@ -613,6 +622,32 @@ final class ListDetail extends NativeComponent
         }
 
         return [];
+    }
+
+    /**
+     * Reintenta las escrituras que el servidor rechazó.
+     *
+     * Un rechazo no es falta de red: no se reintenta solo, pero el usuario sí
+     * puede pedirlo después de arreglar lo que corresponda.
+     */
+    public function retryFailed(): void
+    {
+        $ids = array_values(array_filter(
+            array_map(fn (array $item): string => (string) ($item['id'] ?? ''), $this->pending),
+            fn (string $id): bool => $id !== '' && in_array($id, $this->failedItemIds, true),
+        ));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $this->busy = true;
+
+        app(Outbox::class)->retry(LocalStore::LIST_ITEMS, $ids);
+        app(SyncEngine::class)->run();
+
+        $this->busy = false;
+        $this->load();
     }
 
     public function toggleCategory(string $categoryId): void
@@ -1184,6 +1219,9 @@ final class ListDetail extends NativeComponent
                 : (is_string($category['id'] ?? null) ? $category['id'] : null),
             'icon' => $icon,
             'checked' => $checked,
+            // Una escritura rechazada no se reintenta sola: la tarjeta lo dice
+            // y la pantalla ofrece el reintento.
+            'failed' => in_array($id, $this->failedItemIds, true),
             // La versión del servidor viaja en el cuerpo del PUT: sin ella la
             // API no puede responder `stale_write` cuando el ítem cambió en otro
             // dispositivo mientras estábamos sin red.

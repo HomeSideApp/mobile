@@ -422,6 +422,38 @@ class ListDetailOfflineTest extends TestCase
         $this->assertSame('real-1', $rows[0]['id']);
     }
 
+    public function test_a_rejected_write_is_shown_and_can_be_retried(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        // Sin red: el ítem queda encolado y se ve.
+        Http::fake(fn () => throw new ConnectionException('sin red'));
+
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $component->set('search', 'Yerba');
+        $component->call('createAndAdd');
+
+        $this->assertCount(1, $component->get('pending'));
+        $this->assertFalse($component->get('pending')[0]['failed']);
+
+        // El servidor lo rechaza: la operación queda en `failed`.
+        $entry = OutboxEntry::query()->firstOrFail();
+        $entry->update(['state' => 'failed', 'last_error' => 'rejected']);
+
+        $component->call('load');
+
+        $item = $component->get('pending')[0];
+
+        $this->assertTrue($item['failed'], 'La tarjeta tiene que decirlo.');
+
+        // Reintentar la vuelve a poner en cola.
+        $component->call('retryFailed');
+
+        $this->assertSame('pending', $entry->fresh()->state);
+        $this->assertSame(0, $entry->fresh()->attempts);
+    }
+
     public function test_the_outbox_always_speaks_the_push_contract(): void
     {
         $outbox = app(Outbox::class);

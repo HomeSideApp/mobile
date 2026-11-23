@@ -139,12 +139,31 @@
                         </native:text>
                     </native:row>
 
+                    @if (count(array_filter($pending, fn (array $item): bool => $item['failed'])) > 0)
+                        {{-- Un rechazo no se reintenta solo: se avisa y se ofrece. --}}
+                        <native:column class="w-full gap-2 rounded-lg border border-theme-destructive p-3">
+                            <native:text class="text-sm font-semibold text-theme-destructive">
+                                {{ __('app.list_detail.failed_notice', ['count' => count(array_filter($pending, fn (array $item): bool => $item['failed']))]) }}
+                            </native:text>
+                            <native:text class="text-xs text-theme-on-surface-variant">
+                                {{ __('app.list_detail.failed_hint') }}
+                            </native:text>
+                            <native:button
+                                :label="__('app.list_detail.retry_failed')"
+                                variant="secondary"
+                                class="w-full"
+                                :disabled="$busy"
+                                @press="retryFailed"
+                            />
+                        </native:column>
+                    @endif
+
                     @foreach (array_chunk($pending, 3) as $row)
                         <native:row class="w-full gap-2">
                             @foreach ($row as $item)
                                 <native:pressable
                                     :native:key="$item['id']"
-                                    class="h-[104] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $item['color'] }}]"
+                                    class="h-[104] flex-1 items-center justify-center rounded-lg p-2 bg-[{{ $item['color'] }}] {{ $item['failed'] ? 'border-2 border-theme-destructive' : '' }}"
                                     @press="toggle({{ json_encode($item['id']) }})"
                                     @longPress="openItem({{ json_encode($item['id']) }})"
                                 >
