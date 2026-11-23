@@ -488,6 +488,20 @@ final class ListDetail extends NativeComponent
         }
 
         if (! $applied) {
+            // Sin red: se muestra el ítem ya, marcado como pendiente. El id del
+            // producto nace en el servidor, así que es una fila local que se
+            // retira sola cuando el servidor devuelve la definitiva.
+            app(LocalStore::class)->put(LocalStore::LIST_ITEMS, [
+                'id' => 'pending-'.Str::uuid()->toString(),
+                'list_id' => $this->listId,
+                'product_id' => null,
+                'custom_name' => $product['name'],
+                'quantity' => 1,
+                'is_checked' => false,
+                'pending_sync' => true,
+                'updated_at' => now()->toIso8601String(),
+            ]);
+
             $this->pendingCount = app(Outbox::class)->pending();
             $this->offline = true;
         }

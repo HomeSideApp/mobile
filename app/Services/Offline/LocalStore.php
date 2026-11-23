@@ -91,6 +91,17 @@ final class LocalStore
     }
 
     /**
+     * Borra la fila del espejo.
+     *
+     * Se usa para las filas optimistas: no son datos del servidor, así que no
+     * corresponde un tombstone. Un borrado del servidor va por `forget()`.
+     */
+    public function remove(string $entity, string $id): void
+    {
+        MirrorEntity::query()->where('entity', $entity)->where('id', $id)->delete();
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function all(string $entity): array

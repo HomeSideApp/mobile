@@ -6,6 +6,7 @@ use App\Models\OutboxEntry;
 use App\NativeComponents\ListDetail;
 use App\Services\Offline\LocalStore;
 use App\Services\Offline\Outbox;
+use App\Services\Offline\SyncEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -354,6 +355,71 @@ class ListDetailOfflineTest extends TestCase
         $offline->call('onSearch');
 
         $this->assertSame([], $offline->get('results'));
+    }
+
+    public function test_a_new_product_offline_shows_up_and_is_replaced_by_the_real_one(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        // Un solo fake con bandera: `Http::fake()` acumula y la primera regla
+        // (la que simula la caída) taparía a la del delta.
+        $syncing = false;
+
+        Http::fake(function ($request) use (&$syncing) {
+            if (! $syncing) {
+                throw new ConnectionException('sin red');
+            }
+
+            // El push necesita sus resultados; si no, el outbox nunca drena.
+            if (str_contains($request->url(), '/sync/push')) {
+                $operations = $request->data()['operations'] ?? [];
+
+                return Http::response(['data' => ['results' => array_map(
+                    fn (array $operation): array => [
+                        'op_id' => $operation['op_id'],
+                        'status' => 'applied',
+                        'body' => [],
+                    ],
+                    $operations,
+                )]]);
+            }
+
+            return Http::response(['data' => [
+                'cursor' => 'c2',
+                'has_more' => false,
+                'changes' => ['list_items' => [[
+                    'id' => 'real-1',
+                    'list_id' => 'list-1',
+                    'custom_name' => 'Yerba',
+                    'quantity' => 1,
+                    'is_checked' => false,
+                    'updated_at' => '2026-11-23T10:00:00Z',
+                    'product' => ['id' => 'p-1', 'name' => 'Yerba'],
+                ]]],
+                'deleted' => ['lists' => [], 'list_items' => [], 'economy_transactions' => []],
+            ]]);
+        });
+
+        // Sin red: se escribe "Yerba", que no está en el catálogo.
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $component->set('search', 'Yerba');
+        $component->call('createAndAdd');
+
+        $pending = $component->get('pending');
+
+        $this->assertCount(1, $pending, 'El ítem tiene que verse ya, sin esperar al servidor.');
+        $this->assertSame('Yerba', $pending[0]['name']);
+
+        // El servidor confirma: el delta trae el ítem real con el mismo nombre.
+        $syncing = true;
+
+        app(SyncEngine::class)->run();
+
+        $rows = app(LocalStore::class)->itemsOf('list-1');
+
+        $this->assertCount(1, $rows, 'La fila optimista se retira cuando llega la real.');
+        $this->assertSame('real-1', $rows[0]['id']);
     }
 
     public function test_the_outbox_always_speaks_the_push_contract(): void

@@ -68,6 +68,9 @@ final class SyncEngine
             $result['needsLogin'] = $result['needsLogin'] || $exception->requiresLogin();
         }
 
+        // Filas optimistas que el servidor ya confirmó: se retiran solas.
+        $this->settlePendingItems();
+
         // Tickets capturados sin red: su endpoint no pasa por /sync/push.
         if (! $result['offline']) {
             $this->imports->flush();
@@ -238,6 +241,65 @@ final class SyncEngine
         }
 
         $this->store->put($entity, $resource);
+    }
+
+    /**
+     * Retira las filas optimistas que el servidor ya reemplazó.
+     *
+     * Un ítem creado sin red se muestra con un id local porque el producto nace
+     * en el servidor. Cuando el delta trae el ítem real de esa lista con el
+     * mismo nombre, la fila local sobra: se borra para no mostrar dos.
+     */
+    private function settlePendingItems(): void
+    {
+        $rows = $this->store->all(LocalStore::LIST_ITEMS);
+
+        if ($rows === []) {
+            return;
+        }
+
+        $confirmed = [];
+
+        foreach ($rows as $row) {
+            if (($row['pending_sync'] ?? false) === true) {
+                continue;
+            }
+
+            $listId = is_string($row['list_id'] ?? null) ? $row['list_id'] : '';
+            $name = $this->itemName($row);
+
+            if ($listId !== '' && $name !== '') {
+                $confirmed[$listId][$name] = true;
+            }
+        }
+
+        foreach ($rows as $row) {
+            if (($row['pending_sync'] ?? false) !== true) {
+                continue;
+            }
+
+            $listId = is_string($row['list_id'] ?? null) ? $row['list_id'] : '';
+            $name = $this->itemName($row);
+
+            if ($listId !== '' && $name !== '' && isset($confirmed[$listId][$name])) {
+                $this->store->remove(LocalStore::LIST_ITEMS, (string) ($row['id'] ?? ''));
+            }
+        }
+    }
+
+    /**
+     * Nombre normalizado de un ítem, venga del producto o del nombre libre.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function itemName(array $row): string
+    {
+        $custom = is_string($row['custom_name'] ?? null) ? $row['custom_name'] : '';
+        $product = is_array($row['product'] ?? null) && is_string($row['product']['name'] ?? null)
+            ? $row['product']['name']
+            : '';
+
+        return mb_strtolower(trim($custom !== '' ? $custom : $product));
     }
 
     /**
