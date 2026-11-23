@@ -66,9 +66,19 @@ final class HomesideClient
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function post(string $path, array $payload = [], ?string $idempotencyKey = null): array
-    {
-        return $this->send('POST', $path, payload: $payload, idempotencyKey: $idempotencyKey ?? self::newIdempotencyKey());
+    public function post(
+        string $path,
+        array $payload = [],
+        ?string $idempotencyKey = null,
+        ?int $timeoutSeconds = null,
+    ): array {
+        return $this->send(
+            'POST',
+            $path,
+            payload: $payload,
+            idempotencyKey: $idempotencyKey ?? self::newIdempotencyKey(),
+            timeoutSeconds: $timeoutSeconds,
+        );
     }
 
     /**
@@ -197,11 +207,16 @@ final class HomesideClient
         array $payload = [],
         bool $authenticated = true,
         ?string $idempotencyKey = null,
+        ?int $timeoutSeconds = null,
     ): array {
         $url = $this->server->apiBase.'/'.ltrim($path, '/');
-        $timeout = $authenticated
+
+        // Algunas llamadas (IA, importar una página) tardan mucho más que el
+        // timeout normal: sin uno propio, el cliente corta antes de que el
+        // servidor termine.
+        $timeout = $timeoutSeconds ?? ($authenticated
             ? (int) config('homeside.timeout', 15)
-            : (int) config('homeside.health_timeout', 8);
+            : (int) config('homeside.health_timeout', 8));
 
         $request = Http::baseUrl($this->server->apiBase)
             ->acceptJson()

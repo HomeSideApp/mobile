@@ -76,7 +76,13 @@ final class RecipesService
      */
     public function previewUrl(string $url): array
     {
-        return Session::data($this->session->client()->post('/recipes/import/json-ld', ['url' => $url]));
+        // El servidor baja la página: puede tardar.
+        return Session::data($this->session->client()->post(
+            '/recipes/import/json-ld',
+            ['url' => $url],
+            null,
+            60,
+        ));
     }
 
     /**
@@ -107,7 +113,13 @@ final class RecipesService
      */
     public function generate(string $prompt): array
     {
-        return Session::data($this->session->client()->post('/recipes/ai-generate', ['prompt' => $prompt]));
+        // Generar una receta completa tarda decenas de segundos.
+        return Session::data($this->session->client()->post(
+            '/recipes/ai-generate',
+            ['prompt' => $prompt],
+            null,
+            150,
+        ));
     }
 
     /**
