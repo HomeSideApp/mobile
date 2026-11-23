@@ -46,6 +46,30 @@
                 <native:text class="text-sm text-theme-on-surface">{{ $server ?? __('app.profile.not_configured') }}</native:text>
             </native:column>
 
+            @if ($hasSession)
+                <native:column class="w-full gap-2 rounded-lg bg-theme-surface p-4">
+                    <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">
+                        {{ __('app.profile.cloud_ai') }}
+                    </native:text>
+                    <native:text class="text-sm text-theme-on-surface">
+                        {{ $allowCloudAi ? __('app.profile.cloud_ai_on') : __('app.profile.cloud_ai_off') }}
+                    </native:text>
+                    <native:text class="text-xs text-theme-on-surface-variant">
+                        {{ __('app.profile.cloud_ai_hint') }}
+                    </native:text>
+                    <native:button
+                        :label="$allowCloudAi ? __('app.profile.cloud_ai_disable') : __('app.profile.cloud_ai_enable')"
+                        variant="secondary"
+                        class="w-full"
+                        :disabled="$busy"
+                        @press="toggleCloudAi"
+                    />
+                    @if ($aiNotice)
+                        <native:text class="text-xs text-theme-on-surface-variant">{{ $aiNotice }}</native:text>
+                    @endif
+                </native:column>
+            @endif
+
             {{-- ── Actualizaciones ─────────────────────────────────────── --}}
             <native:column class="w-full gap-3 rounded-lg bg-theme-surface p-4">
                 <native:text class="text-xs font-semibold uppercase text-theme-on-surface-variant">

@@ -3,11 +3,13 @@
 namespace App\NativeComponents;
 
 use App\Exceptions\HomesideException;
+use App\Services\Homeside\AuthService;
 use App\Services\Homeside\EconomyService;
 use App\Services\Homeside\HouseholdsService;
 use App\Services\Media\GalleryPicker;
 use App\Services\Offline\PendingImports;
 use App\Support\Money;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
@@ -30,6 +32,16 @@ final class ExpenseTicket extends NativeComponent
     public bool $busy = false;
 
     public ?string $error = null;
+
+    /**
+     * El ticket no se pudo leer con IA porque el proveedor no corre en el
+     * servidor del usuario y todavía no dio permiso. No es un error: es una
+     * pregunta, y el import queda esperando la respuesta.
+     */
+    public bool $consentRequired = false;
+
+    /** Nombre del proveedor, para que la pregunta sea concreta. */
+    public ?string $consentProvider = null;
 
     public string $scope = 'home';
 
@@ -129,10 +141,52 @@ final class ExpenseTicket extends NativeComponent
             return;
         }
 
+        if ($this->consentRequired) {
+            return;
+        }
+
         try {
             $this->applyImport((new EconomyService)->importStatus($this->householdId(), $this->importId));
         } catch (HomesideException $exception) {
             $this->error = $exception->getMessage();
+        }
+    }
+
+    /**
+     * Permite que la IA lea este ticket fuera del servidor y relanza el análisis.
+     *
+     * El ticket quedó intacto esperando esta decisión: sin el permiso nunca salió
+     * del servidor. Se guarda en el perfil, así que vale para los próximos y se
+     * puede revocar desde ahí.
+     */
+    public function allowCloudAi(): void
+    {
+        if ($this->importId === null || $this->busy) {
+            return;
+        }
+
+        $this->busy = true;
+        $this->error = null;
+
+        try {
+            (new AuthService)->allowCloudAi(true);
+
+            $import = (new EconomyService)->retryImport(
+                $this->householdId(),
+                $this->importId,
+                (string) Str::uuid(),
+            );
+
+            $this->consentRequired = false;
+            $this->status = 'processing';
+
+            if ($import !== []) {
+                $this->applyImport($import);
+            }
+        } catch (HomesideException $exception) {
+            $this->error = $exception->getMessage();
+        } finally {
+            $this->busy = false;
         }
     }
 
@@ -146,6 +200,19 @@ final class ExpenseTicket extends NativeComponent
         $this->warnings = is_array($import['warnings'] ?? null)
             ? array_values(array_filter($import['warnings'], 'is_string'))
             : [];
+
+        $error = is_array($import['error'] ?? null) ? $import['error'] : [];
+        $code = is_string($error['code'] ?? null) ? $error['code'] : null;
+
+        $this->consentRequired = $code === 'ai_consent_required';
+
+        if ($this->consentRequired) {
+            // Se resuelve con una pregunta, no con un mensaje de error rojo.
+            $this->consentProvider = is_string($error['provider'] ?? null) ? $error['provider'] : null;
+            $this->error = null;
+        } elseif (is_string($error['message'] ?? null)) {
+            $this->error = $error['message'];
+        }
 
         $draft = is_array($import['draft'] ?? null) ? $import['draft'] : [];
 

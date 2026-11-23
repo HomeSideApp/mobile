@@ -143,6 +143,25 @@ final class AuthService
      *
      * @throws HomesideException
      */
+    /**
+     * Guarda si el usuario permite que el análisis de tickets use IA fuera de
+     * su servidor.
+     *
+     * El PATCH del perfil exige nombre, email y locale, así que se completan
+     * desde el usuario cacheado en vez de pedirlos en la pantalla del ticket.
+     */
+    public function allowCloudAi(bool $allowed): array
+    {
+        $cached = $this->session->user();
+
+        return $this->updateProfile([
+            'name' => is_array($cached) && is_string($cached['name'] ?? null) ? $cached['name'] : '',
+            'email' => is_array($cached) && is_string($cached['email'] ?? null) ? $cached['email'] : '',
+            'locale' => is_array($cached) && is_string($cached['locale'] ?? null) ? $cached['locale'] : 'en-US',
+            'allow_cloud_ai' => $allowed,
+        ]);
+    }
+
     public function updateProfile(array $payload): array
     {
         $user = Session::data($this->session->client()->patch('/me/profile', $payload));

@@ -70,6 +70,11 @@ final class Profile extends NativeComponent
 
     public ?string $error = null;
 
+    /** Permiso para que el análisis de tickets use IA fuera del servidor. */
+    public bool $allowCloudAi = false;
+
+    public ?string $aiNotice = null;
+
     public string $channel = 'dev';
 
     /** @var array<string, mixed> */
@@ -261,6 +266,36 @@ final class Profile extends NativeComponent
 
         $this->applyUser($user);
         $this->languageNotice = __('app.profile.language_changed');
+    }
+
+    /**
+     * Prende o apaga el permiso de IA para tickets.
+     *
+     * Se guarda en la cuenta, no en el teléfono: vale para cualquier dispositivo
+     * y el servidor lo consulta antes de mandar un ticket afuera.
+     */
+    public function toggleCloudAi(): void
+    {
+        if (! $this->hasSession || $this->busy) {
+            return;
+        }
+
+        $this->busy = true;
+        $this->aiNotice = null;
+
+        try {
+            $user = (new AuthService)->allowCloudAi(! $this->allowCloudAi);
+        } catch (HomesideException $exception) {
+            $this->aiNotice = $exception->getMessage();
+            $this->busy = false;
+
+            return;
+        } finally {
+            $this->busy = false;
+        }
+
+        $this->applyUser($user);
+        $this->aiNotice = __('app.profile.cloud_ai_saved');
     }
 
     public function changeServer(): void
@@ -563,6 +598,7 @@ final class Profile extends NativeComponent
         $this->userEmail = is_string($user['email'] ?? null) ? $user['email'] : null;
         $this->locale = is_string($user['locale'] ?? null) ? $user['locale'] : null;
         $this->twoFactorEnabled = (bool) ($user['two_factor_enabled'] ?? false);
+        $this->allowCloudAi = (bool) ($user['allow_cloud_ai'] ?? false);
     }
 
     public function render(): View

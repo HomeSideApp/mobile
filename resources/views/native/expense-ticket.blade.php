@@ -8,6 +8,16 @@
                 </native:column>
             @endif
 
+            @if ($consentRequired)
+                {{-- El ticket no salió del servidor: espera una decisión, no un reintento. --}}
+                <native:column class="w-full gap-3 rounded-lg bg-theme-surface p-4">
+                    <native:text class="text-base font-semibold text-theme-on-surface">{{ __('app.ticket.consent_title') }}</native:text>
+                    <native:text class="text-sm text-theme-on-surface-variant">{{ __('app.ticket.consent_body') }}</native:text>
+                    <native:button :label="__('app.ticket.consent_allow')" class="w-full" :disabled="$busy" @press="allowCloudAi" />
+                    <native:text class="text-xs text-theme-on-surface-variant">{{ __('app.ticket.consent_hint') }}</native:text>
+                </native:column>
+            @endif
+
             @if ($importId === null)
                 <native:column class="w-full items-center gap-3 rounded-lg bg-theme-surface px-4 py-10">
                     <native:icon ios="doc.text.viewfinder" android="document_scanner" :size="30" class="text-theme-primary" />

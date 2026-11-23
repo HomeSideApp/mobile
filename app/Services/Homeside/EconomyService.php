@@ -167,6 +167,26 @@ final class EconomyService
         );
     }
 
+    /**
+     * Relanza el análisis de un import que quedó parado.
+     *
+     * Se usa cuando el usuario acaba de permitir la IA en la nube: el ticket no
+     * salió del servidor esperando esa decisión, así que hay que volver a
+     * pedirlo.
+     *
+     * @return array<string, mixed>
+     */
+    public function retryImport(?string $householdId, string $importId, string $idempotencyKey): array
+    {
+        return Session::data(
+            $this->session->client()->post(
+                $this->path($householdId, 'imports').'/'.$importId.'/retry',
+                [],
+                $idempotencyKey,
+            ),
+        );
+    }
+
     public function discardImport(?string $householdId, string $importId): void
     {
         Session::data(
