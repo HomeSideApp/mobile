@@ -232,14 +232,35 @@ final class ListDetail extends NativeComponent
     private function loadCatalog(): void
     {
         $catalog = new CatalogService;
+        $store = app(LocalStore::class);
 
         try {
             $categories = $catalog->categories();
             $recent = $catalog->recent(24, $this->householdId);
+
+            // Se guarda lo que acabamos de ver: sin red, esto es lo único que
+            // permite seguir agregando productos.
+            foreach ($categories as $category) {
+                if (is_array($category)) {
+                    $store->put(LocalStore::CATEGORIES, $category);
+                }
+            }
+
+            foreach ($recent as $product) {
+                if (is_array($product)) {
+                    $store->put(LocalStore::PRODUCTS, $product);
+                }
+            }
         } catch (HomesideException $exception) {
             $this->needsLogin = $this->needsLogin || $exception->requiresLogin();
 
-            return;
+            // Sin red: el catálogo conocido alcanza para seguir trabajando.
+            $categories = $store->all(LocalStore::CATEGORIES);
+            $recent = $store->all(LocalStore::PRODUCTS);
+
+            if ($categories === [] && $recent === []) {
+                return;
+            }
         }
 
         $this->categories = array_map(fn (array $category): array => [
@@ -565,12 +586,30 @@ final class ListDetail extends NativeComponent
 
     private function loadCategoryProducts(string $categoryId): void
     {
+        $store = app(LocalStore::class);
+
         try {
             $products = (new CatalogService)->search('', $categoryId, 60);
-        } catch (HomesideException $exception) {
-            $this->error = $exception->getMessage();
 
-            return;
+            foreach ($products as $product) {
+                if (is_array($product)) {
+                    $store->put(LocalStore::PRODUCTS, $product);
+                }
+            }
+        } catch (HomesideException $exception) {
+            // Sin red se cae al catálogo guardado y se filtra por categoría: el
+            // usuario no tiene por qué quedarse sin productos.
+            $products = array_values(array_filter(
+                $store->all(LocalStore::PRODUCTS),
+                fn (array $product): bool => ($product['category']['id'] ?? null) === $categoryId
+                    || ($product['category_id'] ?? null) === $categoryId,
+            ));
+
+            if ($products === []) {
+                $this->error = $exception->getMessage();
+
+                return;
+            }
         }
 
         foreach ($this->categories as $index => $category) {

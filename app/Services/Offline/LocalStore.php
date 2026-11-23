@@ -21,6 +21,14 @@ final class LocalStore
     public const string TRANSACTIONS = 'economy_transactions';
 
     /**
+     * Catálogo. No viaja en el delta (no es parte del alcance offline del
+     * servidor), así que se guarda acá para poder ofrecer productos sin red.
+     */
+    public const string CATEGORIES = 'categories';
+
+    public const string PRODUCTS = 'products';
+
+    /**
      * Relaciones que la UI dibuja y que un servidor viejo puede omitir.
      *
      * Si llegan ausentes se conserva lo último conocido en vez de perder el dato.

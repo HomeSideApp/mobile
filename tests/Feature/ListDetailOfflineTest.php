@@ -253,6 +253,61 @@ class ListDetailOfflineTest extends TestCase
         $this->assertNotNull(app(LocalStore::class)->find(LocalStore::LISTS, 'list-1'));
     }
 
+    public function test_the_catalog_is_usable_without_signal(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        $online = true;
+
+        Http::fake(function ($request) use (&$online) {
+            if (! $online) {
+                throw new ConnectionException('sin red');
+            }
+
+            $url = $request->url();
+
+            if (str_contains($url, '/categories')) {
+                return Http::response(['data' => [
+                    ['id' => 'cat-1', 'name' => 'Lácteos', 'color' => '#42A5F5'],
+                ]]);
+            }
+
+            if (str_contains($url, '/products/recent')) {
+                return Http::response(['data' => [
+                    ['id' => 'product-1', 'name' => 'Leche', 'icon' => 'milk', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+                ]]);
+            }
+
+            if (str_contains($url, '/products')) {
+                return Http::response(['data' => [
+                    ['id' => 'product-1', 'name' => 'Leche', 'icon' => 'milk', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+                ]]);
+            }
+
+            return Http::response(['data' => []]);
+        });
+
+        // Primero con red: se cachea el catálogo.
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $component->assertSet('categories.0.name', 'Lácteos');
+
+        // Y ahora sin red, en la misma pantalla y en una nueva.
+        $online = false;
+
+        $offline = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        $offline->assertSet('categories.0.name', 'Lácteos')
+            ->assertSet('error', null)
+            ->call('toggleCategory', 'cat-1')
+            ->assertSet('categories.0.loaded', true);
+
+        $products = $offline->get('categories')[0]['products'] ?? [];
+
+        $this->assertCount(1, $products);
+        $this->assertSame('Leche', $products[0]['name']);
+    }
+
     public function test_the_outbox_always_speaks_the_push_contract(): void
     {
         $outbox = app(Outbox::class);
