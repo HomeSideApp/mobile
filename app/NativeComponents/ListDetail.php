@@ -240,6 +240,10 @@ final class ListDetail extends NativeComponent
         $store = app(LocalStore::class);
 
         try {
+            // Se mira **antes** de escribir: los recientes también van a la
+            // bolsa del catálogo y taparían la condición del prefetch.
+            $hadCatalog = $store->all(LocalStore::PRODUCTS) !== [];
+
             $categories = $catalog->categories();
             $recent = $catalog->recent(24, $this->householdId);
 
@@ -253,7 +257,25 @@ final class ListDetail extends NativeComponent
 
             foreach ($recent as $product) {
                 if (is_array($product)) {
+                    $store->put(LocalStore::RECENT_PRODUCTS, $product);
                     $store->put(LocalStore::PRODUCTS, $product);
+                }
+            }
+
+            // Una sola request para tener el catálogo completo guardado: así las
+            // categorías se pueden abrir sin red sin haberlas abierto antes.
+            // Sólo cuando el espejo todavía no tiene nada, para no pedir 200
+            // productos en cada apertura de lista.
+            if (! $hadCatalog) {
+                try {
+                    foreach ($catalog->search('', null, 200) as $product) {
+                        if (is_array($product)) {
+                            $store->put(LocalStore::PRODUCTS, $product);
+                        }
+                    }
+                } catch (HomesideException) {
+                    // Guardar el catálogo es una optimización: si falla, la
+                    // pantalla sigue con las categorías y los recientes.
                 }
             }
         } catch (HomesideException $exception) {
@@ -261,7 +283,7 @@ final class ListDetail extends NativeComponent
 
             // Sin red: el catálogo conocido alcanza para seguir trabajando.
             $categories = $store->all(LocalStore::CATEGORIES);
-            $recent = $store->all(LocalStore::PRODUCTS);
+            $recent = $store->all(LocalStore::RECENT_PRODUCTS);
 
             if ($categories === [] && $recent === []) {
                 return;

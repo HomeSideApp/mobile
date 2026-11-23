@@ -309,6 +309,61 @@ class ListDetailOfflineTest extends TestCase
         $this->assertSame('Leche', $products[0]['name']);
     }
 
+    public function test_recent_shows_only_the_recent_ones_and_not_the_whole_catalog(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        $online = true;
+
+        Http::fake(function ($request) use (&$online) {
+            if (! $online) {
+                throw new ConnectionException('sin red');
+            }
+
+            $url = $request->url();
+
+            if (str_contains($url, '/categories')) {
+                return Http::response(['data' => [['id' => 'cat-1', 'name' => 'Lácteos'], ['id' => 'cat-2', 'name' => 'Panadería']]]);
+            }
+
+            if (str_contains($url, '/products/recent')) {
+                return Http::response(['data' => [['id' => 'p-1', 'name' => 'Leche', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']]]]);
+            }
+
+            if (str_contains($url, '/products')) {
+                return Http::response(['data' => [
+                    ['id' => 'p-1', 'name' => 'Leche', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+                    ['id' => 'p-2', 'name' => 'Pan', 'category' => ['id' => 'cat-2', 'name' => 'Panadería']],
+                    ['id' => 'p-3', 'name' => 'Yogur', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+                ]]);
+            }
+
+            return Http::response(['data' => []]);
+        });
+
+        // Con red se cachea todo, pero "usados hace poco" es sólo lo reciente.
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $this->assertCount(1, $component->get('recent'));
+
+        $online = false;
+
+        $offline = Native::test(ListDetail::class, ['list' => 'list-1']);
+
+        $recent = $offline->get('recent');
+
+        $this->assertCount(1, $recent, 'Sin red, "usados hace poco" no es el catálogo entero.');
+        $this->assertSame('Leche', $recent[0]['name']);
+
+        // Pero la categoría que nunca abriste ya tiene sus productos.
+        $offline->call('toggleCategory', 'cat-2');
+
+        $products = $offline->get('categories')[1]['products'] ?? [];
+
+        $this->assertCount(1, $products, 'El catálogo completo se guarda de una sola vez.');
+        $this->assertSame('Pan', $products[0]['name']);
+    }
+
     public function test_the_search_finds_products_from_the_mirror_without_signal(): void
     {
         $this->connect();

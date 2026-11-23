@@ -29,6 +29,12 @@ final class LocalStore
     public const string PRODUCTS = 'products';
 
     /**
+     * Los "usados hace poco" son **otra** bolsa: si se mezclan con el catálogo,
+     * sin red la sección muestra todos los productos conocidos.
+     */
+    public const string RECENT_PRODUCTS = 'recent_products';
+
+    /**
      * Relaciones que la UI dibuja y que un servidor viejo puede omitir.
      *
      * Si llegan ausentes se conserva lo último conocido en vez de perder el dato.

@@ -97,6 +97,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/products/recent*' => Http::response(['data' => [
                 ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería', 'color' => '#7CCBA2']],
             ]]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
     }
@@ -308,6 +312,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/lists/list-1' => Http::sequence()->push($this->listPayload())->push($withImage),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
@@ -351,6 +359,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/lists/list-1' => Http::sequence()->push($this->listPayload())->push($withImage),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
@@ -380,6 +392,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/lists/list-1' => Http::response($payload),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
@@ -403,6 +419,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/lists/list-1' => Http::response($this->listPayload()),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
@@ -438,6 +458,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/lists/list-1' => Http::response($withImage),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
@@ -569,6 +593,10 @@ class ListDetailTest extends TestCase
             '*/api/v1/lists/list-1' => Http::sequence()->push($this->listPayload())->push([], 204),
             '*/api/v1/categories*' => Http::response(['data' => []]),
             '*/api/v1/products/recent*' => Http::response(['data' => []]),
+            '*/api/v1/products?perPage=200*' => Http::response(['data' => [
+                ['id' => 'product-9', 'name' => 'Manzana', 'icon' => 'apple.webp', 'category' => ['id' => 'cat-2', 'name' => 'Verdulería']],
+                ['id' => 'product-10', 'name' => 'Queso', 'icon' => 'cheese.webp', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+            ]]),
             '*/api/v1/me' => Http::response(['data' => $this->me(['active_household_id' => null])]),
         ]);
 
