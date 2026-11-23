@@ -21,6 +21,15 @@ final class LocalStore
     public const string TRANSACTIONS = 'economy_transactions';
 
     /**
+     * Relaciones que la UI dibuja y que un servidor viejo puede omitir.
+     *
+     * Si llegan ausentes se conserva lo último conocido en vez de perder el dato.
+     *
+     * @var list<string>
+     */
+    private const CARRIED_RELATIONS = ['product', 'store', 'category', 'household'];
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     public function put(string $entity, array $payload): void
@@ -29,6 +38,20 @@ final class LocalStore
 
         if (! is_string($id) || $id === '') {
             return;
+        }
+
+        // Un servidor que no cargue las relaciones del ítem las omite del todo.
+        // Reemplazar la fila borraría el nombre del producto que ya teníamos y
+        // la tarjeta pasaría a mostrar el texto de relleno. Se conserva lo que
+        // el servidor **no** mencionó; un borrado real llega como null explícito.
+        $existing = $this->find($entity, $id);
+
+        if ($existing !== null) {
+            foreach (self::CARRIED_RELATIONS as $relation) {
+                if (! array_key_exists($relation, $payload) && array_key_exists($relation, $existing)) {
+                    $payload[$relation] = $existing[$relation];
+                }
+            }
         }
 
         // Por el query builder, no por Eloquent: el modelo no tiene clave
