@@ -308,6 +308,54 @@ class ListDetailOfflineTest extends TestCase
         $this->assertSame('Leche', $products[0]['name']);
     }
 
+    public function test_the_search_finds_products_from_the_mirror_without_signal(): void
+    {
+        $this->connect();
+        $this->seedMirror(withItem: false);
+
+        $online = true;
+
+        Http::fake(function ($request) use (&$online) {
+            if (! $online) {
+                throw new ConnectionException('sin red');
+            }
+
+            if (str_contains($request->url(), '/products')) {
+                return Http::response(['data' => [
+                    ['id' => 'p-1', 'name' => 'Leche entera', 'icon' => 'milk', 'category' => ['id' => 'cat-1', 'name' => 'Lácteos']],
+                    ['id' => 'p-2', 'name' => 'Pan de molde', 'icon' => 'bread', 'category' => ['id' => 'cat-2', 'name' => 'Panadería']],
+                ]]);
+            }
+
+            return Http::response(['data' => []]);
+        });
+
+        // Con red: la búsqueda cachea lo que encuentra.
+        $component = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $component->set('search', 'leche');
+        $component->call('onSearch');
+
+        // Sin red: se busca en lo guardado, sin error.
+        $online = false;
+
+        $offline = Native::test(ListDetail::class, ['list' => 'list-1']);
+        $offline->set('search', 'leche');
+        $offline->call('onSearch');
+
+        $offline->assertSet('error', null)->assertSet('offline', true);
+
+        $results = $offline->get('results');
+
+        $this->assertCount(1, $results);
+        $this->assertSame('Leche entera', $results[0]['name']);
+
+        // Y una búsqueda sin coincidencias no rompe: queda vacía.
+        $offline->set('search', 'zzz');
+        $offline->call('onSearch');
+
+        $this->assertSame([], $offline->get('results'));
+    }
+
     public function test_the_outbox_always_speaks_the_push_contract(): void
     {
         $outbox = app(Outbox::class);

@@ -339,14 +339,37 @@ final class ListDetail extends NativeComponent
         }
 
         $this->searching = true;
+        $store = app(LocalStore::class);
 
         try {
             $products = (new CatalogService)->search($term);
-        } catch (HomesideException $exception) {
-            $this->error = $exception->getMessage();
-            $this->searching = false;
 
-            return;
+            foreach ($products as $product) {
+                if (is_array($product)) {
+                    $store->put(LocalStore::PRODUCTS, $product);
+                }
+            }
+        } catch (HomesideException $exception) {
+            if (! in_array($exception->reason, [HomesideException::NETWORK, HomesideException::NOT_CONFIGURED], true)) {
+                $this->error = $exception->getMessage();
+                $this->searching = false;
+
+                return;
+            }
+
+            // Sin red se busca en el catálogo guardado: el usuario tiene que
+            // poder encontrar y agregar lo que ya conocía.
+            $needle = mb_strtolower($term);
+
+            $products = array_values(array_filter(
+                $store->all(LocalStore::PRODUCTS),
+                fn (array $product): bool => str_contains(
+                    mb_strtolower(is_string($product['name'] ?? null) ? $product['name'] : ''),
+                    $needle,
+                ),
+            ));
+
+            $this->offline = true;
         }
 
         $this->results = array_map(fn (array $product): array => $this->normalizeProduct($product), $products);
@@ -437,14 +460,26 @@ final class ListDetail extends NativeComponent
             // `quick-create` no acepta id de cliente (crea el producto y el ítem
             // juntos), así que sin red no hay fila optimista: el ítem aparece
             // cuando la operación se aplica y el delta lo trae.
+            $created = null;
+
             $applied = app(WriteThrough::class)->run(
                 'post',
                 $this->itemsPath().'/quick-create',
                 ['product' => $product, 'item' => $item],
-                fn () => $lists->quickCreateItem($this->listId, $product, $item, $this->householdId),
+                function () use ($lists, $product, $item, &$created) {
+                    $created = $lists->quickCreateItem($this->listId, $product, $item, $this->householdId);
+
+                    return $created;
+                },
                 LocalStore::LIST_ITEMS,
                 null,
             );
+
+            // El servidor puede haber reutilizado un producto que ya existía:
+            // guardamos el que devolvió para que la próxima búsqueda lo tenga.
+            if (is_array($created) && is_array($created['product'] ?? null)) {
+                app(LocalStore::class)->put(LocalStore::PRODUCTS, $created['product']);
+            }
         } catch (HomesideException $exception) {
             $this->error = $exception->getMessage();
             $this->busy = false;
