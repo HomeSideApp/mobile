@@ -78,20 +78,26 @@
                     <native:column class="flex-1">
                         <native:outlined-text-input
                             :placeholder="__('app.recipes.ingredient_name')"
-                            native:model.debounce.300ms="ingredients.{{ $index }}.name"
+                            :value="$ingredient['name'] ?? ''"
+                            selection="0"
+                            @change="ingredients.{{ $index }}.name = $event"
                         />
                     </native:column>
                     <native:column class="w-[70]">
                         <native:outlined-text-input
                             :placeholder="__('app.recipes.quantity')"
                             keyboard="number"
-                            native:model.debounce.300ms="ingredients.{{ $index }}.quantity"
+                            :value="$ingredient['quantity'] ?? ''"
+                            selection="0"
+                            @change="ingredients.{{ $index }}.quantity = $event"
                         />
                     </native:column>
                     <native:column class="w-[70]">
                         <native:outlined-text-input
                             :placeholder="__('app.recipes.unit')"
-                            native:model.debounce.300ms="ingredients.{{ $index }}.unit"
+                            :value="$ingredient['unit'] ?? ''"
+                            selection="0"
+                            @change="ingredients.{{ $index }}.unit = $event"
                         />
                     </native:column>
                     <native:pressable class="rounded-lg bg-theme-surface-variant px-2 py-2" @press="removeIngredient({{ $index }})">
@@ -118,7 +124,9 @@
                     <native:column class="flex-1">
                         <native:outlined-text-input
                             :placeholder="__('app.recipes.step_placeholder')"
-                            native:model.debounce.300ms="steps.{{ $index }}.description"
+                            :value="$step['description'] ?? ''"
+                            selection="0"
+                            @change="steps.{{ $index }}.description = $event"
                         />
                     </native:column>
                     <native:pressable class="rounded-lg bg-theme-surface-variant px-2 py-2" @press="removeStep({{ $index }})">
